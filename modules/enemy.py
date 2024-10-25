@@ -1,18 +1,18 @@
 import pygame
-import time
 
-pygame.init()
-pygame.mixer.init()
+SCREEN_WIDTH = 800
 
-BORDER_THICKNESS = 0
-FIELD_WIDTH = 0
-FIELD_HEIGHT = 0
 
-class Enemy(pygame.sprite):
-    def __init__(self):
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self, image_path):
         super().__init__()
-        self.images = {
-            'robotQ': pygame.transform.scale(pygame.image.load(images['robotQ']).convert_alpha(), (60, 60)),
-            'robotA': pygame.trandform.scale(pygame.image.load(images['robotA']).convert_alpha(), (60, 60)),
-            'robotZ': pygame.transform.scale(pygame.image.load(images['robotZ']).convert_alpha(), (60, 60)),
-        }
+        self.image = pygame.transform.scale(pygame.image.load(image_path).convert_alpha(), (80, 80))
+        self.rect = self.image.get_rect()
+        self.rect.x = SCREEN_WIDTH
+        self.key = image_path.split('/')[-1][5]  # Exemplo: 'robotq' -> 'q'
+
+    def update(self):
+        self.rect.x -= 3
+        if self.rect.x < -self.rect.width:
+            self.kill()
+

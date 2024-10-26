@@ -3,6 +3,7 @@ from unittest.mock import right
 import pygame
 import random
 from modules import enemy as en
+from modules import player as plr
 from modules import hands
 
 pygame.init()
@@ -11,6 +12,24 @@ pygame.init()
 COLOR_BLACK = (0, 0, 0)
 COLOR_WHITE = (255, 255, 255)
 
+HAND_COLORS = {
+    'left': {
+        'thumb': (255, 0, 0),
+        'index': (0, 200, 0),
+        'middle': (50, 50, 255),
+        'ring': (255, 180, 180),
+        'pinkie': (255, 255, 0),
+    },
+    'right': {
+        'thumb': (255, 0, 0),
+        'index': (150, 180, 255),
+        'middle': (255, 180, 0),
+        'ring': (180, 180, 180),
+        'pinkie': (180, 255, 128),
+    },
+}
+
+
 # Screen size
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 FPS = 60
@@ -18,7 +37,6 @@ FPS = 60
 # Initialize sprite groups
 all_sprites = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
-hands_sprites = pygame.sprite.Group()
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Typing Chase - PyGame Edition - 2024-10-22")
@@ -70,20 +88,31 @@ right_top_row = ["y", "u", "i", "o", "p"]
 right_middle_row = ["h", "j", "k", "l", "ç"]
 right_bottom_row = ["n", "m", ",", ".", ";"]
 
+# Creating player
+player = plr.Player()
+
 # Hands Sprites
-left_hand = hands.Hands("./game_assets/hands/left_hand/hand.png", position=(200, 450))
-right_hand = hands.Hands("./game_assets/hands/right_hand/hand.png", position=(550, 450))
-hands_sprites.add(left_hand, right_hand)
+left_hand_path = "./game_assets/hands/left_hand"
+right_hand_path = "./game_assets/hands/right_hand"
+x_padding = 280
+y_padding = 90
+
+left_hand_pos = (x_padding, SCREEN_HEIGHT - y_padding)
+right_hand_pos = (SCREEN_WIDTH - x_padding, SCREEN_HEIGHT - y_padding)
+
+left_hand = hands.Hands(left_hand_path, left_hand_pos, HAND_COLORS['left'])
+right_hand = hands.Hands(right_hand_path, right_hand_pos, HAND_COLORS['right'])
 
 # Stage image
 stage_back = pygame.transform.scale(pygame.image.load("./game_assets/hunt_stage.png").convert_alpha(), (800, 600))
 
 # Sounds
 chase_music = pygame.mixer.Sound('./game_assets/Too Good Too Bad.mp3')
+chase_music.set_volume(0.3)
 chase_music.play(-1)
 
 # Adding enemies
-def spawn_random_enemy(lvl):
+def spawn_random_enemy(lvl, player):
     if lvl == 1:
         enemy_key = random.choice(list(enemy_left.keys()))
         enemy_image_path = enemy_left[enemy_key]
@@ -113,13 +142,12 @@ def spawn_random_enemy(lvl):
     elif enemy_key in right_bottom_row:
         enemy.rect.y = 300  # Bottom row
 
+    if len(enemies) <= 1:
+        player.closest_enemy = enemy
+
     enemy.rect.x = SCREEN_WIDTH  # Start at the right edge
     enemies.add(enemy)
     all_sprites.add(enemy)
-
-# Player lives and error counts
-lives = 3
-max_points = 25
 
 # Game loop
 clock = pygame.time.Clock()
@@ -147,7 +175,7 @@ while running:
 
     current_time = pygame.time.get_ticks()
     if current_time - enemy_spawn_time > spawn_interval:
-        spawn_random_enemy(level)
+        spawn_random_enemy(level, player)
         enemy_spawn_time = current_time
 
     all_sprites.update()
@@ -155,25 +183,27 @@ while running:
     # Check if any enemy has passed the center
     for enemy in enemies:
         if enemy.rect.x < (SCREEN_WIDTH // 2) - 50:
-            lives -= 1
+            player.lives -= 1
             enemies.remove(enemy)
             all_sprites.remove(enemy)
-            max_points -= 1
+            player.max_points -= 1
 
-    if max_points == 0:
+    if player.max_points == 0:
         level += 1
         if level == 2:
-            max_points += 30
+            player.max_points += 30
         elif level == 3:
-            max_points += 30
+            player.max_points += 30
 
-    if lives <= 0:
+    if player.lives <= 0:
         print("Game Over")
         running = False
 
     screen.blit(stage_back, (0, 0))
     all_sprites.draw(screen)
-    hands_sprites.draw(screen)
+
+    left_hand.draw(screen)
+    right_hand.draw(screen)
 
     pygame.display.flip()
     clock.tick(FPS)

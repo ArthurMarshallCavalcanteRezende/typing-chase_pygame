@@ -2,6 +2,7 @@ from unittest.mock import right
 
 import pygame
 import random
+import sys
 from modules import enemy as en
 from modules import player as plr
 from modules import hands
@@ -11,6 +12,8 @@ pygame.init()
 # Define colors
 COLOR_BLACK = (0, 0, 0)
 COLOR_WHITE = (255, 255, 255)
+COLOR_RED = (255, 0, 0)
+COLOR_GREEN = (0, 255, 0)
 
 HAND_COLORS = {
     'left': {
@@ -39,7 +42,7 @@ all_sprites = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Typing Chase - PyGame Edition - 2024-10-22")
+pygame.display.set_caption("Typing Chase - PyGame Edition - 2024-10-26")
 
 # Enemy images mapping
 enemy_left = {
@@ -62,19 +65,19 @@ enemy_left = {
 
 enemy_right = {
     'y': './game_assets/right_enemies/Yrobot.png',
-    'h': './game_assets/right_enemies/Hrobot.png',
-    'n': './game_assets/right_enemies/Nrobot.png',
     'u': './game_assets/right_enemies/Urobot.png',
-    'j': './game_assets/right_enemies/Jrobot.png',
-    'm': './game_assets/right_enemies/Mrobot.png',
     'i': './game_assets/right_enemies/Irobot.png',
-    'k': './game_assets/right_enemies/Krobot.png',
-    ',': './game_assets/right_enemies/COMMArobot.png',
     'o': './game_assets/right_enemies/Orobot.png',
-    'l': './game_assets/right_enemies/Lrobot.png',
-    '.': './game_assets/right_enemies/DOTrobot.png',
     'p': './game_assets/right_enemies/Probot.png',
+    'h': './game_assets/right_enemies/Hrobot.png',
+    'j': './game_assets/right_enemies/Jrobot.png',
+    'k': './game_assets/right_enemies/Krobot.png',
+    'l': './game_assets/right_enemies/Lrobot.png',
     'ç': './game_assets/right_enemies/CEDrobot.png',
+    'n': './game_assets/right_enemies/Nrobot.png',
+    'm': './game_assets/right_enemies/Mrobot.png',
+    ',': './game_assets/right_enemies/COMMArobot.png',
+    '.': './game_assets/right_enemies/DOTrobot.png',
     ';': './game_assets/right_enemies/SemiColon_robot.png',
 }
 
@@ -106,61 +109,78 @@ right_top_row = ["y", "u", "i", "o", "p"]
 right_middle_row = ["h", "j", "k", "l", "ç"]
 right_bottom_row = ["n", "m", ",", ".", ";"]
 
-# Creating player
-player = plr.Player()
+try:
+    # Creating player
+    player = plr.Player()
 
-# Hands Sprites
-left_hand_path = "./game_assets/hands/left_hand"
-right_hand_path = "./game_assets/hands/right_hand"
-x_padding = 280
-y_padding = 90
+    # Hands Sprites
+    left_hand_path = "./game_assets/hands/left_hand"
+    right_hand_path = "./game_assets/hands/right_hand"
+    x_padding = 280
+    y_padding = 90
 
-left_hand_pos = (x_padding, SCREEN_HEIGHT - y_padding)
-right_hand_pos = (SCREEN_WIDTH - x_padding, SCREEN_HEIGHT - y_padding)
+    left_hand_pos = (x_padding, SCREEN_HEIGHT - y_padding)
+    right_hand_pos = (SCREEN_WIDTH - x_padding, SCREEN_HEIGHT - y_padding)
 
-left_hand = hands.Hands(left_hand_path, left_hand_pos, HAND_COLORS['left'])
-right_hand = hands.Hands(right_hand_path, right_hand_pos, HAND_COLORS['right'])
-left_hand.side = 'left'
-right_hand.side = 'right'
+    left_hand = hands.Hands(left_hand_path, left_hand_pos, HAND_COLORS['left'])
+    right_hand = hands.Hands(right_hand_path, right_hand_pos, HAND_COLORS['right'])
+    left_hand.side = 'left'
+    right_hand.side = 'right'
 
-# Stage image
-stage_back = pygame.transform.scale(pygame.image.load("./game_assets/hunt_stage.png").convert_alpha(), (800, 600))
+    # Stage image
+    stage_back = pygame.transform.scale(pygame.image.load("./game_assets/hunt_stage.png").convert_alpha(), (800, 600))
 
-# Sounds
-chase_music = pygame.mixer.Sound('./game_assets/Too Good Too Bad.mp3')
-chase_music.set_volume(0.3)
-chase_music.play(-1)
+    # Sounds
+    chase_music = pygame.mixer.Sound('./game_assets/Too Good Too Bad.mp3')
+    chase_music.set_volume(0.3)
+    chase_music.play(-1)
 
+    # Fonts
+    font = pygame.font.Font(None, 36)
+except Exception as e:
+    print(f"Error while loading recourses: {e}")
+    print(f"Check if any files have been changed or renamed.")
+    pygame.quit()
+    sys.exit()
+
+# Game loop
+clock = pygame.time.Clock()
+running = True
+game_paused = False
+enemy_spawn_time = 0
+spawn_interval = 2000
+level = 1
+
+''' -----========== FUNCTIONS ==========----- '''
 # Adding enemies
 def spawn_random_enemy(lvl):
     if lvl == 1:
-        enemy_key = random.choice(list(enemy_left.keys()))
-        enemy_image_path = enemy_left[enemy_key]
+        enemy_dict = enemy_left
     elif lvl == 2:
-        enemy_key = random.choice(list(enemy_right.keys()))
-        enemy_image_path = enemy_left[enemy_key]
-    elif lvl == 3:
-        enemy_key = random.choice(list(enemy_left.keys() + enemy_right.keys()))
-        if enemy_key in enemy_left:
-            enemy_image_path = enemy_left[enemy_key]
-        else:
-            enemy_image_path = enemy_right[enemy_key]
+        enemy_dict = enemy_right
+    else:
+        enemy_dict = {**enemy_left, **enemy_right}
 
-    enemy = en.Enemy(enemy_image_path)
+    enemy_key = random.choice(list(enemy_dict.keys()))
+    enemy_image_path = enemy_dict[enemy_key]
 
-    # Set the row based on the key
-    if enemy_key in left_top_row:
-        enemy.rect.y = 30  # Top row
-    elif enemy_key in left_middle_row:
-        enemy.rect.y = 150  # Middle row
-    elif enemy_key in left_bottom_row:
-        enemy.rect.y = 300  # Bottom row
-    elif enemy_key in right_top_row:
-        enemy.rect.y = 30  # Top row
-    elif enemy_key in right_middle_row:
-        enemy.rect.y = 150  # Middle row
-    elif enemy_key in right_bottom_row:
-        enemy.rect.y = 300  # Bottom row
+    try:
+        # Creating the enemy and setting its key
+        enemy = en.Enemy(enemy_image_path)
+        enemy.key = enemy_key
+
+        # Set the row based on the key given
+        if enemy_key in left_top_row or enemy_key in right_top_row:
+            enemy.rect.y = 30
+        elif enemy_key in left_middle_row or enemy_key in right_middle_row:
+            enemy.rect.y = 150
+        elif enemy_key in left_bottom_row or enemy_key in right_bottom_row:
+            enemy.rect.y = 300
+        enemy.rect.x = SCREEN_WIDTH
+        enemies.add(enemy)
+        all_sprites.add(enemy)
+    except Exception as e:
+        print(f"Error while spawning enemy: {e}")
 
     found_finger = None
 
@@ -180,78 +200,151 @@ def spawn_random_enemy(lvl):
     enemies.add(enemy)
     all_sprites.add(enemy)
 
-# Game loop
-clock = pygame.time.Clock()
-running = True
-enemy_spawn_time = 0
-spawn_interval = 2000
-level = 1
 
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+def reset_game():
+    """RESET ALL GAME VARIABLES FOR RESTART OR NEW LEVEL"""
+    global level, spawn_interval
+    player.lives = 3
+    player.score = 0
+    player.combo = 0
+    player.max_combo = 0
+    level = 1
+    spawn_interval = 2000
 
-        # Check for key presses
-        if event.type == pygame.KEYDOWN:
-            key = pygame.key.name(event.key)
-            print(f"Key pressed: {key}")  # Debugging output
-            for enemy in enemies:
-                print(f"Checking enemy: {enemy.key}")  # Debugging output
-                if enemy.key == key and enemy == player.closest_enemy:
-                    print(f"Enemy defeated: {enemy.key}")  # Debugging output
-                    enemies.remove(enemy)
-                    all_sprites.remove(enemy)
-                    break
+    enemies.empty()
+    all_sprites.empty()
 
-    current_time = pygame.time.get_ticks()
-    if current_time - enemy_spawn_time > spawn_interval:
-        spawn_random_enemy(level)
-        enemy_spawn_time = current_time
 
-    all_sprites.update()
+try:
+    while running:
+        current_time = pygame.time.get_ticks()
 
-    closest_to_plr = [None, 99999]
+        # Handling all pygame events, including keys pressed
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    game_paused = not game_paused
+                if not game_paused and player.lives > 0:
+                    key = pygame.key.name(event.key)
+                    enemy_hit = False
+                    for enemy in enemies.copy():
+                        # Check if enemy is the right key and closest to player
+                        if enemy.key == key and enemy == player.closest_enemy:
+                            enemies.remove(enemy)
+                            all_sprites.remove(enemy)
 
-    # Checking enemy conditions
-    for enemy in enemies:
-        # If enemy is the current to the player
-        player_magnitude = enemy.rect.x - (SCREEN_WIDTH // 2) - 50
-        if player_magnitude < closest_to_plr[1]:
-            closest_to_plr = [enemy, player_magnitude]
+                            # Rewarding with score and combo
+                            player.score += 10 * (player.combo + 1)
+                            player.combo += 1
+                            max_combo = max(player.combo, player.max_combo)
 
-        # If enemy passed the limit to damage player
-        if enemy.rect.x < (SCREEN_WIDTH // 2) - 50:
-            player.lives -= 1
-            enemies.remove(enemy)
-            all_sprites.remove(enemy)
-            player.max_points -= 1
+                            enemy_hit = True
+                            break
+                    if not enemy_hit:
+                        combo = 0
 
-    # Updating the closest enemy to the player
-    if closest_to_plr[0]:
-        player.closest_enemy = closest_to_plr[0]
+        if not game_paused and player.lives > 0:
+            # Enemy spawning every interval
+            if current_time - enemy_spawn_time > spawn_interval:
+                spawn_random_enemy(level)
+                enemy_spawn_time = current_time
 
-    left_hand.update(player.closest_enemy)
-    right_hand.update(player.closest_enemy)
+            # Updating all sprites
+            all_sprites.update()
 
-    if player.max_points == 0:
-        level += 1
-        if level == 2:
-            player.max_points += 30
-        elif level == 3:
-            player.max_points += 30
+        closest_to_plr = [None, 99999]
 
-    if player.lives <= 0:
-        print("Game Over")
-        running = False
+        # Checking enemy conditions
+        for enemy in enemies:
+            # If enemy is the current to the player
+            player_magnitude = enemy.rect.x - (SCREEN_WIDTH // 2) - 50
+            if player_magnitude < closest_to_plr[1]:
+                closest_to_plr = [enemy, player_magnitude]
 
-    screen.blit(stage_back, (0, 0))
-    all_sprites.draw(screen)
+            # If enemy passed the limit to damage player
+            if enemy.rect.x < (SCREEN_WIDTH // 2) - 50:
+                player.lives -= 1
+                player.combo = 0
+                enemies.remove(enemy)
+                all_sprites.remove(enemy)
 
-    left_hand.draw(screen)
-    right_hand.draw(screen)
+        # Updating the closest enemy to the player
+        if closest_to_plr[0]:
+            player.closest_enemy = closest_to_plr[0]
 
-    pygame.display.flip()
-    clock.tick(FPS)
+        left_hand.update(player.closest_enemy)
+        right_hand.update(player.closest_enemy)
 
-pygame.quit()
+        # Changing levels based off player score
+        if player.score >= 300 and level == 1:
+            level = 2
+            spawn_interval = max(1500, spawn_interval - 200)
+        elif player.score >= 1000 and level == 2:
+            level = 3
+            spawn_interval = max(1000, spawn_interval - 200)
+
+        screen.blit(stage_back, (0, 0))
+        all_sprites.draw(screen)
+
+        left_hand.draw(screen)
+        right_hand.draw(screen)
+
+        # Setting user interface
+        score_text = font.render(f'Score: {player.score}', True, COLOR_WHITE)
+        lives_text = font.render(f'Lives: {player.lives}', True, COLOR_WHITE)
+        combo_text = font.render(f'Combo: {player.combo}', True, COLOR_WHITE)
+        level_text = font.render(f'Level: {level}', True, COLOR_WHITE)
+        screen.blit(score_text, (10, 10))
+        screen.blit(lives_text, (10, 40))
+        screen.blit(combo_text, (10, 70))
+        screen.blit(level_text, (10, 100))
+
+        if game_paused:
+            pause_text = font.render('PAUSED - Press ESC to continue', True,
+                                     COLOR_WHITE)
+            screen.blit(pause_text,
+                        (SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2))
+
+        # Game Over
+        if player.lives <= 0:
+            game_over_text = font.render('GAME OVER', True, COLOR_RED)
+            final_score_text = font.render(f'Final Score: {player.score}', True,
+                                           COLOR_WHITE)
+            max_combo_text = font.render(f'Max Combo: {player.max_combo}', True,
+                                         COLOR_WHITE)
+            restart_text = font.render('Press SPACE to restart or ESC to quit',
+                                       True, COLOR_WHITE)
+            screen.blit(game_over_text,
+                        (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50))
+            screen.blit(final_score_text,
+                        (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2))
+            screen.blit(max_combo_text,
+                        (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 50))
+            screen.blit(restart_text,
+                        (SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT // 2 + 100))
+            pygame.display.flip()
+            # Espera por input do jogador
+            waiting = True
+
+            while waiting and running:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        waiting = False
+                        running = False
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_SPACE:
+                            reset_game()
+                            waiting = False
+                        elif event.key == pygame.K_ESCAPE:
+                            waiting = False
+                            running = False
+
+        pygame.display.flip()
+        clock.tick(FPS)
+except Exception as e:
+    print(f"Error while trying to run TYPING-CHASE: {e}")
+finally:
+    pygame.quit()
+    sys.exit()

@@ -132,7 +132,7 @@ try:
 
     # Sounds
     chase_music = pygame.mixer.Sound('./game_assets/Too Good Too Bad.mp3')
-    chase_music.set_volume(0.3)
+    chase_music.set_volume(0.2)
     chase_music.play(-1)
 
     # Fonts
@@ -238,7 +238,7 @@ try:
                             # Rewarding with score and combo
                             player.score += 10 * (player.combo + 1)
                             player.combo += 1
-                            max_combo = max(player.combo, player.max_combo)
+                            player.max_combo = max(player.combo, player.max_combo)
 
                             enemy_hit = True
                             break
@@ -278,7 +278,7 @@ try:
         right_hand.update(player.closest_enemy)
 
         # Changing levels based off player score
-        if player.score >= 300 and level == 1:
+        if player.score >= 500 and level == 1:
             level = 2
             spawn_interval = max(1500, spawn_interval - 200)
         elif player.score >= 1000 and level == 2:

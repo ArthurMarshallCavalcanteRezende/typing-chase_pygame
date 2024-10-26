@@ -22,6 +22,7 @@ def create_finger(hand, name, path, color):
 class Hands(pygame.sprite.Sprite):
     def __init__(self, image_path, position, colors):
         super().__init__()
+        self.side = ''
         self.hand_sprite = pygame.image.load(image_path + '/hand.png').convert_alpha()
         self.hand_sprite = pygame.transform.scale(self.hand_sprite, (HAND_SIZE, HAND_SIZE))
         self.hand_base = pygame.image.load(image_path + '/base.png').convert_alpha()
@@ -38,6 +39,18 @@ class Hands(pygame.sprite.Sprite):
 
         self.rect = self.hand_base.get_rect()
         self.rect.center = position
+
+    def update(self, enemy):
+        if not enemy: return
+
+        for finger in self.finger_list:
+            if (finger['name'] == enemy.finger_highlight[1]
+                and self.side == enemy.finger_highlight[0]):
+                finger['show_color'] = True
+            else:
+                finger['show_color'] = False
+
+
 
     def draw(self, screen):
         # Drawing every finger

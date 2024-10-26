@@ -9,6 +9,7 @@ class Enemy(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = SCREEN_WIDTH
         self.key = self.extract_key(image_path)
+        self.finger_highlight = None
 
     def extract_key(self, image_path):
         filename = image_path.split('/')[-1]

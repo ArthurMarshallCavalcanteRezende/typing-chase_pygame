@@ -78,6 +78,24 @@ enemy_right = {
     ';': './game_assets/right_enemies/SemiColon_robot.png',
 }
 
+# Keys lists for each hand
+HAND_KEYS = [
+    [   # Left Hand
+        ['left', 'thumb', [' ']],
+        ['left','index', ['v', 'b', 'f', 'g', 'r', 't', '4', '5']],
+        ['left','middle', ['c', 'd', 'e', '3']],
+        ['left','ring', ['x', 's', 'w', '2']],
+        ['left','pinkie', ['z', 'a', 'q', '1']],
+    ],
+    [   # Right Hand
+        ['right', 'thumb', [' ']],
+        ['right', 'index', ['n', 'm', 'h', 'j', 'y', 'u', '6', '7']],
+        ['right', 'middle', [',', 'k', 'i', '8']],
+        ['right', 'ring', ['.', 'l', 'o', '9']],
+        ['right', 'pinkie', [';', 'ç', 'p', '0']],
+    ]
+]
+
 # Left keys list by rows
 left_top_row = ["q", "w", "e", "r", "t"]
 left_middle_row = ["a", "s", "d", "f", "g"]
@@ -102,6 +120,8 @@ right_hand_pos = (SCREEN_WIDTH - x_padding, SCREEN_HEIGHT - y_padding)
 
 left_hand = hands.Hands(left_hand_path, left_hand_pos, HAND_COLORS['left'])
 right_hand = hands.Hands(right_hand_path, right_hand_pos, HAND_COLORS['right'])
+left_hand.side = 'left'
+right_hand.side = 'right'
 
 # Stage image
 stage_back = pygame.transform.scale(pygame.image.load("./game_assets/hunt_stage.png").convert_alpha(), (800, 600))
@@ -112,7 +132,7 @@ chase_music.set_volume(0.3)
 chase_music.play(-1)
 
 # Adding enemies
-def spawn_random_enemy(lvl, player):
+def spawn_random_enemy(lvl):
     if lvl == 1:
         enemy_key = random.choice(list(enemy_left.keys()))
         enemy_image_path = enemy_left[enemy_key]
@@ -142,9 +162,20 @@ def spawn_random_enemy(lvl, player):
     elif enemy_key in right_bottom_row:
         enemy.rect.y = 300  # Bottom row
 
-    if len(enemies) <= 1:
-        player.closest_enemy = enemy
+    found_finger = None
 
+    for hand in HAND_KEYS:
+        if found_finger: break
+
+        for finger in hand:
+            if found_finger: break
+
+            for current_key in finger[2]:
+                if current_key == enemy_key:
+                    found_finger = finger
+                    break
+
+    if found_finger: enemy.finger_highlight = found_finger
     enemy.rect.x = SCREEN_WIDTH  # Start at the right edge
     enemies.add(enemy)
     all_sprites.add(enemy)
@@ -167,7 +198,7 @@ while running:
             print(f"Key pressed: {key}")  # Debugging output
             for enemy in enemies:
                 print(f"Checking enemy: {enemy.key}")  # Debugging output
-                if enemy.key == key:
+                if enemy.key == key and enemy == player.closest_enemy:
                     print(f"Enemy defeated: {enemy.key}")  # Debugging output
                     enemies.remove(enemy)
                     all_sprites.remove(enemy)
@@ -175,18 +206,33 @@ while running:
 
     current_time = pygame.time.get_ticks()
     if current_time - enemy_spawn_time > spawn_interval:
-        spawn_random_enemy(level, player)
+        spawn_random_enemy(level)
         enemy_spawn_time = current_time
 
     all_sprites.update()
 
-    # Check if any enemy has passed the center
+    closest_to_plr = [None, 99999]
+
+    # Checking enemy conditions
     for enemy in enemies:
+        # If enemy is the current to the player
+        player_magnitude = enemy.rect.x - (SCREEN_WIDTH // 2) - 50
+        if player_magnitude < closest_to_plr[1]:
+            closest_to_plr = [enemy, player_magnitude]
+
+        # If enemy passed the limit to damage player
         if enemy.rect.x < (SCREEN_WIDTH // 2) - 50:
             player.lives -= 1
             enemies.remove(enemy)
             all_sprites.remove(enemy)
             player.max_points -= 1
+
+    # Updating the closest enemy to the player
+    if closest_to_plr[0]:
+        player.closest_enemy = closest_to_plr[0]
+
+    left_hand.update(player.closest_enemy)
+    right_hand.update(player.closest_enemy)
 
     if player.max_points == 0:
         level += 1

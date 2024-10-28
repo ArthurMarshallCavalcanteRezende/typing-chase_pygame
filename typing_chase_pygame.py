@@ -111,7 +111,9 @@ right_bottom_row = ["n", "m", ",", ".", ";"]
 
 try:
     # Creating player
-    player = plr.Player()
+    player_pos = ((SCREEN_WIDTH // 2) - 100, SCREEN_HEIGHT - 250)
+
+    player = plr.Player(player_pos)
 
     # Hands Sprites
     left_hand_path = "./game_assets/hands/left_hand"
@@ -218,6 +220,7 @@ def reset_game():
 try:
     while running:
         current_time = pygame.time.get_ticks()
+        player_action = None
 
         # Handling all pygame events, including keys pressed
         for event in pygame.event.get():
@@ -229,6 +232,7 @@ try:
                 if not game_paused and player.lives > 0:
                     key = pygame.key.name(event.key)
                     enemy_hit = False
+
                     for enemy in enemies.copy():
                         # Check if enemy is the right key and closest to player
                         if enemy.key == key and enemy == player.closest_enemy:
@@ -241,9 +245,21 @@ try:
                             player.max_combo = max(player.combo, player.max_combo)
 
                             enemy_hit = True
+
+                            # Getting the right animation for the player to play
+                            if enemy.key in left_top_row or enemy.key in right_top_row:
+                                player_action = 'right_shoot_top'
+                            elif enemy.key in left_middle_row or enemy.key in right_middle_row:
+                                player_action = 'right_shoot_middle'
+                            elif enemy.key in left_bottom_row or enemy.key in left_bottom_row:
+                                player_action = 'right_shoot_down'
+
                             break
                     if not enemy_hit:
-                        combo = 0
+                        player.combo = 0
+
+
+        player.on_input(player_action)
 
         if not game_paused and player.lives > 0:
             # Enemy spawning every interval
@@ -290,6 +306,7 @@ try:
 
         left_hand.draw(screen)
         right_hand.draw(screen)
+        player.draw(screen)
 
         # Setting user interface
         score_text = font.render(f'Score: {player.score}', True, COLOR_WHITE)
@@ -325,7 +342,8 @@ try:
             screen.blit(restart_text,
                         (SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT // 2 + 100))
             pygame.display.flip()
-            # Espera por input do jogador
+
+            # Wait for player input
             waiting = True
 
             while waiting and running:

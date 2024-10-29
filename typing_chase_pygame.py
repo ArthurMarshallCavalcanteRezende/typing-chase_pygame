@@ -111,7 +111,7 @@ right_bottom_row = ["n", "m", ",", ".", ";"]
 
 try:
     # Creating player
-    player_pos = ((SCREEN_WIDTH // 2) - 100, SCREEN_HEIGHT - 250)
+    player_pos = ((SCREEN_WIDTH // 3) - 100, SCREEN_HEIGHT - 250)
 
     player = plr.Player(player_pos)
 
@@ -136,6 +136,7 @@ try:
     chase_music = pygame.mixer.Sound('./game_assets/Too Good Too Bad.mp3')
     chase_music.set_volume(0.2)
     chase_music.play(-1)
+    destroy_sound = pygame.mixer.Sound('./game_assets/explosion.wav')
 
     # Fonts
     font = pygame.font.Font(None, 36)
@@ -236,6 +237,7 @@ try:
                     for enemy in enemies.copy():
                         # Check if enemy is the right key and closest to player
                         if enemy.key == key and enemy == player.closest_enemy:
+                            destroy_sound.play()
                             enemies.remove(enemy)
                             all_sprites.remove(enemy)
 

@@ -14,6 +14,7 @@ COLOR_BLACK = (0, 0, 0)
 COLOR_WHITE = (255, 255, 255)
 COLOR_RED = (255, 0, 0)
 COLOR_GREEN = (0, 255, 0)
+COLOR_BRIGHT_YELLOW = (255, 255, 150)
 
 HAND_COLORS = {
     'left': {
@@ -73,7 +74,8 @@ enemy_right = {
     'j': './game_assets/right_enemies/Jrobot.png',
     'k': './game_assets/right_enemies/Krobot.png',
     'l': './game_assets/right_enemies/Lrobot.png',
-    'ç': './game_assets/right_enemies/CEDrobot.png',
+    # This keys doesn't seem to work with pygame for some reason
+    # 'ç': './game_assets/right_enemies/CEDrobot.png',
     'n': './game_assets/right_enemies/Nrobot.png',
     'm': './game_assets/right_enemies/Mrobot.png',
     ',': './game_assets/right_enemies/COMMArobot.png',
@@ -132,11 +134,22 @@ try:
     # Stage image
     stage_back = pygame.transform.scale(pygame.image.load("./game_assets/hunt_stage.png").convert_alpha(), (800, 600))
 
-    # Sounds
+    # Soundz
     chase_music = pygame.mixer.Sound('./game_assets/Too Good Too Bad.mp3')
     chase_music.set_volume(0.2)
     chase_music.play(-1)
-    destroy_sound = pygame.mixer.Sound('./game_assets/explosion.wav')
+    destroy_sound = pygame.mixer.Sound('./game_assets/sfx/explosion.wav')
+    destroy_sound.set_volume(0.3)
+    points_sound = pygame.mixer.Sound('./game_assets/sfx/points.wav')
+    points_sound.set_volume(0.7)
+    damage_sound = pygame.mixer.Sound('./game_assets/sfx/damage.wav')
+    damage_sound.set_volume(0.6)
+    levelup_sound = pygame.mixer.Sound('./game_assets/sfx/levelup.wav')
+    levelup_sound.set_volume(0.5)
+    wrong_sound = pygame.mixer.Sound('./game_assets/sfx/wrong_input.wav')
+    wrong_sound.set_volume(0.4)
+
+
 
     # Fonts
     font = pygame.font.Font(None, 36)
@@ -152,6 +165,7 @@ running = True
 game_paused = False
 enemy_spawn_time = 0
 spawn_interval = 2000
+enemy_speed = 2
 level = 1
 
 ''' -----========== FUNCTIONS ==========----- '''
@@ -169,7 +183,7 @@ def spawn_random_enemy(lvl):
 
     try:
         # Creating the enemy and setting its key
-        enemy = en.Enemy(enemy_image_path)
+        enemy = en.Enemy(enemy_image_path, enemy_speed)
         enemy.key = enemy_key
 
         # Set the row based on the key given
@@ -206,16 +220,70 @@ def spawn_random_enemy(lvl):
 
 def reset_game():
     """RESET ALL GAME VARIABLES FOR RESTART OR NEW LEVEL"""
-    global level, spawn_interval
+    global level, spawn_interval, enemy_speed
     player.lives = 3
     player.score = 0
     player.combo = 0
     player.max_combo = 0
+    player.levelup_req = 800
+    player.level_multi = 1
+
+    enemy_speed = 3
     level = 1
     spawn_interval = 2000
 
     enemies.empty()
     all_sprites.empty()
+
+
+def level_player():
+    global spawn_interval, level, enemy_speed
+
+    if player.score >= player.levelup_req:
+        new_req = 4
+
+        if player.levelup_req < 1000:
+            new_req = 4
+        elif player.levelup_req < 10000:
+            new_req = 3
+        elif player.levelup_req < 50000:
+            new_req = 2
+        elif player.levelup_req < 250000:
+            new_req = 1.5
+
+        levelup_sound.play()
+        player.levelup_req = int(player.levelup_req * new_req)
+        level += 1
+        player.level_multi += 1
+        player.lives += 1 if player.lives < 10 else 0
+
+
+    # Updating difficulty every frame
+    if level == 2:
+        enemy_speed = 3
+        spawn_interval = random.randint(1500, 2500)
+    elif level == 3:
+        spawn_interval = random.randint(1200, 2200)
+    elif level >= 4:
+        lowest_interval = 1000 - (30 * level)
+        highest_interval = 1800 - (20 * level)
+        if lowest_interval < 500: lowest_interval = 500
+        if highest_interval < 1000: highest_interval = 1000
+
+        spawn_interval = random.randint(lowest_interval, highest_interval)
+
+        # Getting random speed value depending on corresponding weight chance
+        speed_values = [3, 4]
+        speed_odds = [40, 20]
+
+        if level == 5:
+            speed_values = [3, 4, 5]
+            speed_odds = [40, 30, 5]
+        elif level > 5:
+            speed_values = [3, 4, 5, 6]
+            speed_odds = [30, 30, 5 + level, level]
+        
+        enemy_speed = random.choices(speed_values, speed_odds)[0]
 
 
 try:
@@ -238,11 +306,13 @@ try:
                         # Check if enemy is the right key and closest to player
                         if enemy.key == key and enemy == player.closest_enemy:
                             destroy_sound.play()
+                            points_sound.play()
+
                             enemies.remove(enemy)
                             all_sprites.remove(enemy)
 
                             # Rewarding with score and combo
-                            player.score += 10 * (player.combo + 1)
+                            player.score += 10 * (player.combo + 1) * player.level_multi
                             player.combo += 1
                             player.max_combo = max(player.combo, player.max_combo)
 
@@ -253,11 +323,12 @@ try:
                                 player_action = 'right_shoot_top'
                             elif enemy.key in left_middle_row or enemy.key in right_middle_row:
                                 player_action = 'right_shoot_middle'
-                            elif enemy.key in left_bottom_row or enemy.key in left_bottom_row:
+                            elif enemy.key in left_bottom_row or enemy.key in right_bottom_row:
                                 player_action = 'right_shoot_down'
 
                             break
                     if not enemy_hit:
+                        wrong_sound.play()
                         player.combo = 0
 
 
@@ -283,6 +354,9 @@ try:
 
             # If enemy passed the limit to damage player
             if enemy.rect.x < (SCREEN_WIDTH // 2) - 50:
+                destroy_sound.play()
+                damage_sound.play()
+
                 player.lives -= 1
                 player.combo = 0
                 enemies.remove(enemy)
@@ -296,12 +370,7 @@ try:
         right_hand.update(player.closest_enemy)
 
         # Changing levels based off player score
-        if player.score >= 500 and level == 1:
-            level = 2
-            spawn_interval = max(1500, spawn_interval - 200)
-        elif player.score >= 1000 and level == 2:
-            level = 3
-            spawn_interval = max(1000, spawn_interval - 200)
+        level_player()
 
         screen.blit(stage_back, (0, 0))
         all_sprites.draw(screen)
@@ -315,10 +384,13 @@ try:
         lives_text = font.render(f'Lives: {player.lives}', True, COLOR_WHITE)
         combo_text = font.render(f'Combo: {player.combo}', True, COLOR_WHITE)
         level_text = font.render(f'Level: {level}', True, COLOR_WHITE)
+        next_level_text = font.render(f'Next level: {player.levelup_req} score',
+                                      True, COLOR_BRIGHT_YELLOW)
         screen.blit(score_text, (10, 10))
         screen.blit(lives_text, (10, 40))
         screen.blit(combo_text, (10, 70))
         screen.blit(level_text, (10, 100))
+        screen.blit(next_level_text, (10, 180))
 
         if game_paused:
             pause_text = font.render('PAUSED - Press ESC to continue', True,
@@ -331,18 +403,22 @@ try:
             game_over_text = font.render('GAME OVER', True, COLOR_RED)
             final_score_text = font.render(f'Final Score: {player.score}', True,
                                            COLOR_WHITE)
+            level_reached_text = font.render(f'Congrats! You reached level {level}!',
+                                         True, COLOR_WHITE)
             max_combo_text = font.render(f'Max Combo: {player.max_combo}', True,
                                          COLOR_WHITE)
             restart_text = font.render('Press SPACE to restart or ESC to quit',
                                        True, COLOR_WHITE)
             screen.blit(game_over_text,
+                        (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 100))
+            screen.blit(level_reached_text,
                         (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50))
             screen.blit(final_score_text,
-                        (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2))
+                        (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 20))
             screen.blit(max_combo_text,
-                        (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 50))
+                        (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 10))
             screen.blit(restart_text,
-                        (SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT // 2 + 100))
+                        (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 70))
             pygame.display.flip()
 
             # Wait for player input

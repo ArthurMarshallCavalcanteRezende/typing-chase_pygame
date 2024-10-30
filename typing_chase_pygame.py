@@ -148,6 +148,8 @@ try:
     levelup_sound.set_volume(0.5)
     wrong_sound = pygame.mixer.Sound('./game_assets/sfx/wrong_input.wav')
     wrong_sound.set_volume(0.4)
+    get_life_sound = pygame.mixer.Sound('./game_assets/sfx/get_life.wav')
+    get_life_sound.set_volume(0.5)
 
 
 
@@ -282,7 +284,7 @@ def level_player():
         elif level > 5:
             speed_values = [3, 4, 5, 6]
             speed_odds = [30, 30, 5 + level, level]
-        
+
         enemy_speed = random.choices(speed_values, speed_odds)[0]
 
 
@@ -315,6 +317,11 @@ try:
                             player.score += 10 * (player.combo + 1) * player.level_multi
                             player.combo += 1
                             player.max_combo = max(player.combo, player.max_combo)
+
+                            if (player.combo > 0 and player.combo % 10 == 0
+                                    and player.lives < 5):
+                                player.lives += 1
+                                get_life_sound.play()
 
                             enemy_hit = True
 

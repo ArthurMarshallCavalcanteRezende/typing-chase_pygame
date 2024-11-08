@@ -166,6 +166,9 @@ def load_game(game):
     # Stage image
     game.stage_back = pygame.transform.scale(pygame.image.load("./game_assets/hunt_stage.png").convert_alpha(),
                                           (800, 600))
+    game.tutorial_stage = pygame.transform.scale(
+        pygame.image.load("./game_assets/stages/tutorial_stage.png").convert_alpha(),
+        (800, 600))
 
     # Sounds
     game.chase_music = pygame.mixer.Sound('./game_assets/Too Good Too Bad.mp3')

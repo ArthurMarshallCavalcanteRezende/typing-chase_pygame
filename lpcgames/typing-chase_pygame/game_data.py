@@ -29,7 +29,7 @@ class colors:
     green_yellow = (180, 255, 0),
     blue = (0, 0, 255),
     cyan = (0, 255, 255),
-    bright_cyan = (120, 255, 255),
+    bright_cyan = (120, 255, 255)
 
 def load_game(game):
     # Screen size and frames per second

@@ -187,7 +187,5 @@ def load_game(game):
     game.get_life_sound = pygame.mixer.Sound('./game_assets/sfx/get_life.wav')
     game.get_life_sound.set_volume(0.5)
 
-    game.chase_music.play(-1)
-
     # Fonts
     game.font = pygame.font.Font(None, 36)

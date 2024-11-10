@@ -143,16 +143,16 @@ def load_game(game):
 
     # Stage terrain images and values
     game.floor_image = pygame.image.load(
-        "./game_assets/background/floor.png").convert_alpha()
+        "./game_assets/stages/1/floor.png").convert_alpha()
     game.floor_image = pygame.transform.scale(game.floor_image, (250, 250))
 
     game.bg_image = pygame.image.load(
-        "./game_assets/background/background.png").convert_alpha()
+        "./game_assets/stages/1/background.png").convert_alpha()
     game.bg_image = pygame.transform.scale(
         game.bg_image, (game.SCREEN_HEIGHT, game.SCREEN_HEIGHT))
 
     game.bg_pillar_image = pygame.image.load(
-        "./game_assets/background/background_pillar.png").convert_alpha()
+        "./game_assets/stages/1/background_pillar.png").convert_alpha()
     game.bg_pillar_image = pygame.transform.scale(
         game.bg_pillar_image, (game.SCREEN_HEIGHT, game.SCREEN_HEIGHT))
 
@@ -190,8 +190,10 @@ def load_game(game):
         game.background_sprites.append(new_bg)
 
     # Sounds
-    game.chase_music = pygame.mixer.Sound('./game_assets/Too Good Too Bad.mp3')
-    game.chase_music.set_volume(0.2)
+    game.first_chase_music = pygame.mixer.Sound('./game_assets/RevengeEnemy.mp3')
+    game.first_chase_music.set_volume(0.2)
+    game.second_chase_music = pygame.mixer.Sound('./game_assets/Dragon Road - Day.mp3')
+    game.second_chase_music.set_volume(0.2)
 
     game.destroy_sound = pygame.mixer.Sound('./game_assets/sfx/explosion.wav')
     game.destroy_sound.set_volume(0.3)

@@ -92,7 +92,9 @@ class Level:
         self.fl_pos = 0
         self.fn_pos = 0
 
-        self.target_word = load_random_word('C:/typing-chase_pygame/all_words/words_test.txt')
+        self.started = False
+
+        self.target_word = load_random_word('./all_words/words_test.txt')
         self.remaining_word = self.target_word
 
         level_config(game, self)
@@ -120,17 +122,23 @@ class Level:
 
     # Main function to run the game
     def run(self, game):
+        if not self.started:
+            game.menu_music.stop()
+            pygame.mixer.music.load(self.music)
+            pygame.mixer.music.play(-1)
+            pygame.mixer.music.set_volume(0.3)
+
+            if self.stage == 0 or self.stage == 2:
+                game.player.is_running = False
+            else:
+                game.player.is_running = True
+
+            game.player.reset_anim()
+
+            self.started = True
+
         current_time = pygame.time.get_ticks()
         player_action = None
-        if self.stage == 0:
-            pygame.mixer.music.load(lvl0_music)
-            pygame.mixer.music.play(-1)
-        elif self.stage == 1:
-            pygame.mixer.music.load(lvl1_music)
-            pygame.mixer.music.play(-1)
-        elif self.stage == 2:
-            pygame.mixer.music.load(lvl2_music)
-            pygame.mixer.music.play(-1)
 
         # Handling all pygame events, including keys pressed
         for event in pygame.event.get():
@@ -216,7 +224,7 @@ class Level:
         game.right_hand.draw(game.screen)
 
         if game.level.stage < 2:
-            game.player.draw(game.screen)
+            game.player.draw(game, stopped)
 
         # Setting user interface
         distance_text = game.large_font.render(f'{game.player.distance} m', True, game.COLORS.white)
@@ -242,8 +250,6 @@ class Level:
             bullet_train = pygame.transform.scale(bullet_train, (750, 450))
             bullet_train_rect.center = (game.SCREEN_WIDTH // 2, game.SCREEN_HEIGHT // 1.5)
             game.screen.blit(bullet_train, bullet_train_rect)
-            # Player position
-            game.player.draw_2(game.screen)
 
     def game_over(self, game):
         # Game Over
@@ -264,7 +270,7 @@ class Level:
                          (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 + 10))
         game.screen.blit(restart_text,
                          (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 + 70))
-        pygame.display.flip()
+
 
         # Wait for player input
         waiting = True
@@ -280,6 +286,8 @@ class Level:
                         waiting = False
 
     def pause(self, game):
+        pygame.mixer.music.set_volume(0.1)
+
         while game.game_state == 'pause' and game.running:
             self.draw(game, True)
             game.screen.blit(game.DARK_FILTER, (0, 0))
@@ -301,6 +309,7 @@ class Level:
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
                         game.game_state = 'level'
+                        pygame.mixer.music.set_volume(0.3)
                     elif event.key == pygame.K_ESCAPE:
                         game.game_state = 'menu'
 

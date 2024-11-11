@@ -1,48 +1,95 @@
 import pygame
+import os
 
 IMG_SIZE = 120
 PLR_ASSETS_PATH = './game_assets/player'
 
-# Creating a sprite with various custom properties
-def create_sprite(player, name, path):
-    image = pygame.image.load(path + f'/{name}.png').convert_alpha()
-    image = pygame.transform.scale(image, (IMG_SIZE, IMG_SIZE))
+# Class for creating a spritesheet for animated sprites
+class Sprite:
+    def __init__(self, player, name, path, special_list=None):
+        self.name = name
+        self.image_list = []
+        self.image_path = PLR_ASSETS_PATH + f'/{path}'
+        self.current_image = None
 
-    sprite = {
-        'name': name,
-        'image': image,
-        'visible': False,
-        'offset_x': 0,
-        'offset_y': 0
-    }
+        # Adding every frame image to the list to run through
+        name_list = []
 
-    player.sprite_list.append(sprite)
-    return sprite
+        for filename in os.listdir(self.image_path):
+            name_list.append(filename)
+
+        # Important to keep it from 1 to n organized
+        name_list.sort()
+
+        for filename in name_list:
+            image = pygame.image.load(self.image_path + f'/{filename}').convert_alpha()
+            image = pygame.transform.scale(image, (IMG_SIZE, IMG_SIZE))
+
+            self.image_list.append(image)
+
+        # Values for updating the animation frame per update interval
+        self.index = 0
+        self.max_index = len(self.image_list) - 1
+        self.tick = 0
+        self.update_interval = 8
+
+        self.visible = False
+
+        player.sprite_list.append(self)
+        self.current_image = self.image_list[self.index]
+
+
+    def update(self):
+        self.tick += 1
+
+        if self.tick > self.update_interval:
+            self.tick = 0
+            self.index += 1
+            if self.index > self.max_index: self.index = 0
+
+            self.current_image = self.image_list[self.index]
+
+    def draw(self, game):
+        if self.visible:
+            new_rect = game.player.rect
+
+            if game.level.stage == 2:
+                new_rect = pygame.Rect(
+                    game.player.rect.x + 50,
+                    game.player.rect.y - 150,
+                    IMG_SIZE, IMG_SIZE)
+
+            game.screen.blit(self.current_image, new_rect)
+
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, position):
         super().__init__()
         self.sprite_list = []
+        self.running_list = []
 
-        self.body = create_sprite(self, 'body', PLR_ASSETS_PATH)
-        self.glasses = create_sprite(self, 'glasses', PLR_ASSETS_PATH)
+        # Idle sprites
+        self.idle = Sprite(self, 'idle', 'idle')
 
-        # Separated limbs for each side of the player
-        self.left_action = create_sprite(self, 'left_action', PLR_ASSETS_PATH)
-        self.left_idle = create_sprite(self, 'left_idle', PLR_ASSETS_PATH)
-        self.left_shoot = create_sprite(self, 'left_shoot', PLR_ASSETS_PATH)
+        # Running sprites
+        self.run_body = Sprite(self, 'run_body', 'run/body')
+        self.run_left = Sprite(self, 'run_left', 'run/left_run')
+        self.run_right = Sprite(self, 'run_right', 'run/right_run')
+        self.running_list.append(self.run_body)
+        self.running_list.append(self.run_left)
+        self.running_list.append(self.run_right)
 
-        self.right_action = create_sprite(self, 'right_action', PLR_ASSETS_PATH)
-        self.right_idle = create_sprite(self, 'right_idle', PLR_ASSETS_PATH)
-        self.right_shoot_down = create_sprite(self, 'right_shoot_down', PLR_ASSETS_PATH)
-        self.right_shoot_middle = create_sprite(self, 'right_shoot_middle', PLR_ASSETS_PATH)
-        self.right_shoot_top = create_sprite(self, 'right_shoot_top', PLR_ASSETS_PATH)
+        # Shooting sprites
+        self.left_shoot = Sprite(self, 'left_shoot', 'shoot/left')
+        self.right_shoot = Sprite(self, 'right_shoot', 'shoot/right')
+        self.run_left_shoot = Sprite(self, 'run_left_shoot', 'run/left_shoot')
+        self.run_right_shoot = Sprite(self, 'run_right_shoot', 'run/right_shoot')
 
-        self.rect = self.body['image'].get_rect()
+        self.rect = pygame.Rect(0, 0, IMG_SIZE, IMG_SIZE)
         self.rect.center = position
         self.shoot_visual_cd = [0, 30, False]
-        self.click_visual_cd = [0, 30, False]
-        self.action_mode = True
+        self.is_running = True
+        self.shooting = False
 
         self.lives = 3
         self.score = 0
@@ -54,62 +101,49 @@ class Player(pygame.sprite.Sprite):
         self.difficulty = 1
         self.closest_enemy = None
 
-        for sprite in self.sprite_list:
-            # Making only action sprites visible
-            if (sprite['name'] != 'left_idle'
-                    and sprite['name'] != 'right_action'
-                    and sprite['name'] != 'body'
-                    and sprite['name'] != 'glasses'):
+        self.reset_anim()
 
-                sprite['visible'] = False
-            else:
-                sprite['visible'] = True
+
+    def reset_anim(self):
+        for sprite in self.sprite_list:
+            sprite.visible = False
+
+        if self.is_running:
+            for sprite in self.running_list:
+                print('turned visible:', sprite)
+                sprite.visible = True
+        else:
+            self.idle.visible = True
 
     # Handle the basics of shooting animation
-    def shoot_anim(self, to_visible, glasses_offset):
-        self.right_shoot_top['visible'] = False
-        self.right_shoot_middle['visible'] = False
-        self.right_shoot_down['visible'] = False
-        self.right_action['visible'] = False
-        self.right_idle['visible'] = False
-        self.left_idle['visible'] = False
-        self.left_action['visible'] = False
+    def shoot_anim(self, side):
+        for sprite in self.sprite_list:
+            sprite.visible = False
 
-        to_visible['visible'] = True
+        if self.is_running:
+            self.run_body.visible = True
 
-        self.glasses['offset_y'] = glasses_offset
-        self.click_visual_cd[2] = True
+            if side == 'left':
+                self.run_left_shoot.visible = True
+                self.run_right.visible = True
+            elif side == 'right':
+                self.run_right_shoot.visible = True
+                self.run_left.visible = True
+        else:
+            if side == 'left':
+                self.left_shoot.visible = True
+            elif side == 'right':
+                self.right_shoot.visible = True
+
         self.shoot_visual_cd[2] = True
 
     def on_input(self, action):
         if action:
-
-            # Running through every sprite to check key conditions
-            for sprite in self.sprite_list:
-                if action == sprite['name']:
-
-                    if sprite['name'] == 'right_shoot_down':
-                        self.shoot_anim(self.left_action, 1)
-                    elif sprite['name'] == 'right_shoot_middle':
-                        self.shoot_anim(self.left_action, -3)
-                    elif sprite['name'] == 'right_shoot_top':
-                        self.shoot_anim(self.left_action, -6)
-
-                    sprite['visible'] = True
-                    break
-
+            if action == 'shoot_left':
+                self.shoot_anim('left')
+            elif action == 'shoot_right':
+                self.shoot_anim('right')
         else:
-            # Dealing with changing limb pressing "keyboard" visually after some time
-            if self.click_visual_cd[2]: self.click_visual_cd[0] += 1
-
-            if (self.click_visual_cd[0] > self.click_visual_cd[1]
-                and self.click_visual_cd[2]):
-                self.click_visual_cd[0] = 0
-                self.click_visual_cd[2] = False
-                self.left_action['visible'] = False
-                self.left_idle['visible'] = True
-
-
             # Dealing with changing visuals back to idle or action form after some time
             if self.shoot_visual_cd[2]: self.shoot_visual_cd[0] += 1
 
@@ -117,49 +151,14 @@ class Player(pygame.sprite.Sprite):
                 and self.shoot_visual_cd[2]):
                 self.shoot_visual_cd[0] = 0
                 self.shoot_visual_cd[2] = False
-                self.glasses['offset_y'] = 0
 
-                for sprite in self.sprite_list:
-
-                    if self.action_mode:
-                        # Making only idle sprites visible
-                        if (sprite['name'] != 'left_idle'
-                                and sprite['name'] != 'right_action'
-                                and sprite['name'] != 'body'
-                                and sprite['name'] != 'glasses'):
-
-                            sprite['visible'] = False
-                        else:
-                            sprite['visible'] = True
-                    else:
-                        # Making only idle sprites visible
-                        if (sprite['name'] != 'left_idle'
-                            and sprite['name'] != 'right_idle'
-                            and sprite['name'] != 'body'
-                            and sprite['name'] != 'glasses'):
-
-                            sprite['visible'] = False
-                        else:
-                            sprite['visible'] = True
+                self.reset_anim()
 
 
-    def draw(self, screen):
+    def draw(self, game, stopped=False):
         # Drawing visible sprites and positioning them with offsets
-        for sprite in self.sprite_list:
-            if sprite['visible']:
-                new_rect = pygame.Rect(
-                    self.rect.x + sprite['offset_x'],
-                    self.rect.y + sprite['offset_y'],
-                    IMG_SIZE, IMG_SIZE)
-                screen.blit(sprite['image'], new_rect)
 
-    def draw_2(self, screen):
         for sprite in self.sprite_list:
-            if sprite['visible']:
-                new_rect = pygame.Rect(
-                    self.rect.x + 50,
-                    self.rect.y - 150,
-                    IMG_SIZE, IMG_SIZE)
-
-                # Desenhe o sprite na nova posição
-                screen.blit(sprite['image'], new_rect)
+            if sprite.visible:
+                if not stopped: sprite.update()
+                sprite.draw(game)

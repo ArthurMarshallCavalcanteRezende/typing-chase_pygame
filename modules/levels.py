@@ -1,5 +1,21 @@
 import pygame
+import csv
+import random
 from modules import background as bg
+
+pygame.mixer.init()
+
+menu_music = './game_assets/music/Jesse James.mp3'
+lvl0_music = './game_assets/music/level0.mp3'
+lvl1_music = './game_assets/music/level1.mp3'
+menace_music = './game_assets/music/The Ring - Klonoa.mp3'
+lvl2_music = './game_assets/music/level2.mp3'
+
+def load_random_word(file_path):
+    with open(file_path, 'r') as file:
+        reader = csv.reader(file)
+        words = [row[0] for row in reader]
+    return random.choice(words)
 
 def level_config(game, level):
     level.assets = f"./game_assets/stages/{level.stage}"
@@ -76,6 +92,9 @@ class Level:
         self.fl_pos = 0
         self.fn_pos = 0
 
+        self.target_word = load_random_word('C:/typing-chase_pygame/all_words/words_test.txt')
+        self.remaining_word = self.target_word
+
         level_config(game, self)
 
         new_floor_pos = (0, self.floor_y)
@@ -103,6 +122,15 @@ class Level:
     def run(self, game):
         current_time = pygame.time.get_ticks()
         player_action = None
+        if self.stage == 0:
+            pygame.mixer.music.load(lvl0_music)
+            pygame.mixer.music.play(-1)
+        elif self.stage == 1:
+            pygame.mixer.music.load(lvl1_music)
+            pygame.mixer.music.play(-1)
+        elif self.stage == 2:
+            pygame.mixer.music.load(lvl2_music)
+            pygame.mixer.music.play(-1)
 
         # Handling all pygame events, including keys pressed
         for event in pygame.event.get():
@@ -186,7 +214,9 @@ class Level:
 
         game.left_hand.draw(game.screen)
         game.right_hand.draw(game.screen)
-        game.player.draw(game.screen)
+
+        if game.level.stage < 2:
+            game.player.draw(game.screen)
 
         # Setting user interface
         distance_text = game.large_font.render(f'{game.player.distance} m', True, game.COLORS.white)
@@ -205,6 +235,15 @@ class Level:
             game.screen.blit(game.score_image, (5, 80))
         game.screen.blit(lives_text, (10, game.SCREEN_HEIGHT - 80))
         game.screen.blit(combo_text, (10, game.SCREEN_HEIGHT - 50))
+
+        if game.level.stage == 2:
+            bullet_train = pygame.image.load(f"./game_assets/stages/2/bullet_train.png").convert_alpha()
+            bullet_train_rect = bullet_train.get_rect()
+            bullet_train = pygame.transform.scale(bullet_train, (750, 450))
+            bullet_train_rect.center = (game.SCREEN_WIDTH // 2, game.SCREEN_HEIGHT // 1.5)
+            game.screen.blit(bullet_train, bullet_train_rect)
+            # Player position
+            game.player.draw_2(game.screen)
 
     def game_over(self, game):
         # Game Over

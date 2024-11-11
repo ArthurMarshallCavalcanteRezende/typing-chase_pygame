@@ -167,14 +167,11 @@ def load_game(game):
     # Musics
     game.menu_music = pygame.mixer.Sound('./game_assets/music/Jesse James.mp3')
     game.menu_music.set_volume(0.5)
-    game.lvl0_music = pygame.mixer.Sound('./game_assets/music/lvl0.mp3')
-    game.lvl0_music.set_volume(0.5)
+    game.lvl0_music = pygame.mixer.music.load('./game_assets/music/level0.mp3')
     game.lvl1_music = pygame.mixer.Sound('./game_assets/music/level1.mp3')
-    game.lvl1_music.set_volume(0.5)
     game.menace_music = pygame.mixer.Sound('./game_assets/music/The Ring - Klonoa.mp3')
     game.menace_music.set_volume(0.5)
     game.lvl2_music = pygame.mixer.Sound('./game_assets/music/level2.mp3')
-    game.lvl2_music.set_volume(0.5)
 
     # ZH4R0V Dubs
     game.zharov_speech1 = pygame.mixer.Sound('./game_assets/stages/2/zharov_speech1.mp3')

@@ -152,3 +152,14 @@ class Player(pygame.sprite.Sprite):
                     self.rect.y + sprite['offset_y'],
                     IMG_SIZE, IMG_SIZE)
                 screen.blit(sprite['image'], new_rect)
+
+    def draw_2(self, screen):
+        for sprite in self.sprite_list:
+            if sprite['visible']:
+                new_rect = pygame.Rect(
+                    self.rect.x + 50,
+                    self.rect.y - 150,
+                    IMG_SIZE, IMG_SIZE)
+
+                # Desenhe o sprite na nova posição
+                screen.blit(sprite['image'], new_rect)

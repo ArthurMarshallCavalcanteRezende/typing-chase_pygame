@@ -41,7 +41,7 @@ class Hands(pygame.sprite.Sprite):
         self.rect.center = position
 
     def update(self, enemy):
-        if not enemy: return
+        if not enemy or not enemy.finger_highlight: return
 
         for finger in self.finger_list:
             if (finger['name'] == enemy.finger_highlight[1]

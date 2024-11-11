@@ -7,6 +7,8 @@ so you don't have to constantly get them from other scripts.
 """
 
 import pygame
+import csv
+import random
 
 from modules import player as plr
 from modules import hands
@@ -80,7 +82,6 @@ def load_game(game):
 
     # Initialize sprite groups
     game.all_sprites = pygame.sprite.Group()
-    game.enemies = pygame.sprite.Group()
 
     game.screen = pygame.display.set_mode(
         (game.SCREEN_WIDTH, game.SCREEN_HEIGHT))
@@ -92,8 +93,6 @@ def load_game(game):
     game.type1_robot = '/game_assets/enemy_sprites/classB_robot.png'
     game.type2_robot = '/game_assets/enemy_sprites/classC_robot.png'
     game.type1_robot = '/game_assets/enemy_sprites/classD_robot.png'
-
-    game.enemy_sprites = './game_assets/enemy_sprites/'
 
     # Keys lists for each hand
     game.HAND_KEYS = [
@@ -113,15 +112,14 @@ def load_game(game):
         ]
     ]
 
-    # Left keys list by rows
-    game.left_top_row = ["q", "w", "e", "r", "t"]
-    game.left_middle_row = ["a", "s", "d", "f", "g"]
-    game.left_bottom_row = ["z", "x", "c", "v", "b"]
+    # Left and right keys list by rows
+    with open('./all_words/left.txt', 'r') as file:
+        reader = csv.reader(file)
+        game.left_keys = [row[0] for row in reader]
 
-    # Right keys list by rows
-    game.right_top_row = ["y", "u", "i", "o", "p"]
-    game.right_middle_row = ["h", "j", "k", "l", "ç"]
-    game.right_bottom_row = ["n", "m", ",", ".", ";"]
+    with open('./all_words/right.txt', 'r') as file:
+        reader = csv.reader(file)
+        game.right_keys = [row[0] for row in reader]
 
     # Creating player
     game.player_pos = ((game.SCREEN_WIDTH // 3) - 100,

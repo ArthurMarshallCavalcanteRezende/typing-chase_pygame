@@ -66,7 +66,6 @@ def reset_game(game):
     game.enemy_speed = 2
     game.spawn_interval = 2000
 
-    game.enemies.empty()
     game.all_sprites.empty()
     game.game_state = 'menu'
 
@@ -97,6 +96,18 @@ def run(game):
                 if game.game_state == 'level':
                     if event.key == pygame.K_ESCAPE:
                         game.game_state = 'pause'
+
+                    if event.key == pygame.K_ESCAPE:
+                        game.paused = not game.paused
+
+                    game.player.key_pressed = event.key
+
+                    if not game.paused and game.player.lives > 0:
+                        # Checking if player hit enemy and returns the action
+                        if game.player.key_pressed in game.left_keys:
+                            game.player.action = 'shoot_left'
+                        elif game.player.key_pressed in game.right_keys:
+                            game.player.action = 'shoot_right'
 
         # Loading different things depending on game state
         if game.game_state == 'menu':

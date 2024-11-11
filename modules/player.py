@@ -100,6 +100,8 @@ class Player(pygame.sprite.Sprite):
         self.distance = 0
         self.difficulty = 1
         self.closest_enemy = None
+        self.action = None
+        self.key_pressed = None
 
         self.reset_anim()
 
@@ -110,7 +112,6 @@ class Player(pygame.sprite.Sprite):
 
         if self.is_running:
             for sprite in self.running_list:
-                print('turned visible:', sprite)
                 sprite.visible = True
         else:
             self.idle.visible = True

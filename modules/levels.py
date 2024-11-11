@@ -2,6 +2,7 @@ import pygame
 import csv
 import random
 from modules import background as bg
+from modules import enemy
 
 pygame.mixer.init()
 
@@ -78,6 +79,8 @@ class Level:
 
         self.floor_sprites = []
         self.bg_sprites = []
+        self.enemy_list = []
+
         self.floor_lights = None
         self.floor_neon = None
         self.floor_lights_pos = None
@@ -93,9 +96,36 @@ class Level:
         self.fn_pos = 0
 
         self.started = False
+        self.word_list = []
+        self.has_words = False
 
-        self.target_word = load_random_word('./all_words/words_test.txt')
-        self.remaining_word = self.target_word
+        self.spawn_max = 1
+        self.word_chance = 0
+
+        if self.stage == 0:
+            self.word_list = [
+                './all_words/left.txt'
+            ]
+        elif self.stage == 1:
+            self.word_list = [
+                './all_words/left.txt',
+                './all_words/right.txt',
+                './all_words/words_test.txt',
+            ]
+            self.word_chance = 10
+            self.spawn_max = 3
+            self.spawn_max = 3
+            self.has_words = True
+        elif self.stage == 2:
+            self.word_list = [
+                './all_words/left.txt',
+                './all_words/right.txt',
+                './all_words/words_test.txt',
+            ]
+            self.word_chance = 40
+            self.spawn_max = 4
+            self.enemy_speed = 3
+            self.has_words = True
 
         level_config(game, self)
 
@@ -120,6 +150,25 @@ class Level:
             self.bg_sprites.append(new_bg)
 
 
+    def spawn_enemy(self, game):
+        choosen_txt = ''
+        txt_size = len(self.word_list) - 1
+
+        if self.has_words:
+            if random.randint(1, 100) <= self.word_chance:
+                choosen_txt = self.word_list[2]
+            else:
+                choosen_txt = self.word_list[random.randint(0, txt_size)]
+
+        else:
+            choosen_txt = self.word_list[random.randint(0, txt_size)]
+
+        new_word = load_random_word(choosen_txt)
+        new_enemy = enemy.Enemy(game, new_word, self.enemy_speed)
+
+        self.enemy_list.append(new_enemy)
+
+
     # Main function to run the game
     def run(self, game):
         if not self.started:
@@ -138,37 +187,27 @@ class Level:
             self.started = True
 
         current_time = pygame.time.get_ticks()
-        player_action = None
 
-        # Handling all pygame events, including keys pressed
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                game.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    game.paused = not game.paused
+        for enemy in self.enemy_list:
+            enemy.update(game)
 
-                elif not game.paused and game.player.lives > 0 and self.remaining_word:
-                    if event.unicode == self.remaining_word[0]:
-                        self.remaining_word = self.remaining_word[1:]
-                        if not self.remaining_word:
-                            if game.player.closest_enemy:
-                                game.enemies.remove(game.player.closest_enemy)
-                                game.all_sprites.remove(game.player.closest_enemy)
-                                game.player.score += 100
-                            self.target_word = load_random_word('./path/to/words.csv')
-                            self.remaining_word = self.target_word
+            if game.player.key_pressed == enemy.remaining_text[-1]:
+                enemy.remaining_text = enemy.remaining_text[:-1]
 
-                if not game.paused and game.player.lives > 0:
-                    # Checking if player hit enemy and returns the action
-                    player_action = None
+                if not enemy.remaining_text:
+                    if game.player.closest_enemy:
+                        self.enemy_list.remove(enemy)
 
-        game.player.on_input(player_action)
+                        to_gain = len(enemy.target_text) * 10 * game.player.max_combo
+                        game.player.score += to_gain * self.stage
+
+        game.player.on_input(game.player.action)
 
         if not game.paused and game.player.lives > 0:
             # Enemy spawning every interval
             if current_time - self.enemy_spawn_time > self.spawn_interval:
                 self.enemy_spawn_time = current_time
+                self.spawn_enemy(game)
 
             # Updating all sprites
             game.all_sprites.update()
@@ -176,29 +215,28 @@ class Level:
         closest_to_plr = [None, 99999]
 
         # Checking enemy conditions
-        if self.stage == 1:
-            for enemy in game.enemies:
-                # If enemy is the current to the player
-                player_magnitude = enemy.rect.x - (game.SCREEN_WIDTH // 2) - 50
-                if player_magnitude < closest_to_plr[1]:
-                    closest_to_plr = [enemy, player_magnitude]
+        for enemy in self.enemy_list:
+            # If enemy is the current to the player
+            player_magnitude = enemy.rect.x - (game.SCREEN_WIDTH // 2) - 50
+            if player_magnitude < closest_to_plr[1]:
+                closest_to_plr = [enemy, player_magnitude]
 
-                # If enemy passed the limit to damage player
-                if enemy.rect.x < (game.SCREEN_WIDTH // 2) - 50:
-                    game.destroy_sound.play()
-                    game.damage_sound.play()
+            # If enemy passed the limit to damage player
+            if enemy.rect.x < (game.SCREEN_WIDTH // 2) - 50:
+                game.destroy_sound.play()
+                game.damage_sound.play()
 
-                    game.player.lives -= 1
-                    game.player.combo = 0
-                    game.enemies.remove(enemy)
-                    game.all_sprites.remove(enemy)
+                game.player.lives -= 1
+                game.player.combo = 0
+                self.enemy_list.remove(enemy)
+                game.all_sprites.remove(enemy)
 
-            # Updating the closest enemy to the player
-            if closest_to_plr[0]:
-                game.player.closest_enemy = closest_to_plr[0]
+        # Updating the closest enemy to the player
+        if closest_to_plr[0]:
+            game.player.closest_enemy = closest_to_plr[0]
 
-            game.left_hand.update(game.player.closest_enemy)
-            game.right_hand.update(game.player.closest_enemy)
+        game.left_hand.update(game.player.closest_enemy)
+        game.right_hand.update(game.player.closest_enemy)
 
         game.tick += 1
         distance_threshold = 15 - game.player.speed if game.player.speed < 15 else 14
@@ -219,6 +257,8 @@ class Level:
         bg.update_terrain(game, game.level, stopped)
 
         game.all_sprites.draw(game.screen)
+        for enemy in self.enemy_list:
+            enemy.draw(game)
 
         game.left_hand.draw(game.screen)
         game.right_hand.draw(game.screen)
@@ -233,10 +273,6 @@ class Level:
         combo_text = game.text_font.render(f'Combo: {game.player.combo}', True, game.COLORS.white)
 
         # Actual word indicator
-        font = pygame.font.Font(None, 36)
-        word_text = font.render(self.remaining_word, True, game.COLORS.white)
-        game.screen.blit(word_text, (10, game.SCREEN_HEIGHT - 40))
-
         if game.level.stage > 0:
             game.screen.blit(distance_text, (10, -5))
             game.screen.blit(score_text, (50, 70))

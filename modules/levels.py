@@ -1,146 +1,103 @@
 import pygame
-import random
+from modules import background as bg
 
-from modules import enemy as en
+def level_config(game, level):
+    level.assets = f"./game_assets/stages/{level.stage}"
+    level.music = f"./game_assets/music/level{level.stage}.mp3"
+
+    # Loading proper images
+    level.floor_image = pygame.image.load(f"{level.assets}/floor.png").convert_alpha()
+    level.floor_image = pygame.transform.scale(level.floor_image, level.floor_size)
+
+    level.bg1_image = pygame.image.load(f"{level.assets}/bg1.png").convert_alpha()
+    level.bg1_image = pygame.transform.scale(level.bg1_image, level.bg_size)
+
+    level.bg2_image = pygame.image.load(f"{level.assets}/bg2.png").convert_alpha()
+    level.bg2_image = pygame.transform.scale(level.bg2_image, level.bg_size)
+
+    level.floor_y = game.SCREEN_HEIGHT - (level.floor_size[1] // 4)
+    level.bg_y = (level.bg_size[1] // 2)
+
+    if level.stage == 0:
+        level.name = game.LV0_NAME
+        level.description = "like father, like son"
+        level.difficulty_req = 200
+    if level.stage == 1:
+        level.name = game.LV1_NAME
+        level.description = "Coffee for today's task"
+        level.difficulty_req = 100
+        level.bg_color = game.COLORS.dark_grey
+
+        level.floor_lights = pygame.Surface((game.SCREEN_WIDTH, level.floor_y // 1.25))
+        level.floor_lights.fill(game.BASE_FLOOR_LIGHTS_COLOR)
+        level.fl_pos = (0, game.SCREEN_HEIGHT - 185)
+
+        level.floor_neon = pygame.Surface((game.SCREEN_WIDTH, level.floor_y // 1.3))
+        level.floor_neon.fill(game.COLORS.black[0])
+        level.fn_pos = (0, level.floor_y)
+    if level.stage == 2:
+        level.name = game.LV2_NAME
+        level.description = "Freeze, ZH4R0V!!!"
+        level.difficulty_req = 500
 
 class Level:
-    def __init__(self, game, index):
-        self.index = index
+    def __init__(self, game, stage):
+        self.stage = stage
         self.name = ''
-        self.background = ''
-        self.floor = ''
+        self.description = ''
+        self.assets = ''
         self.music = ''
+        self.floor_image = ''
+        self.bg1_image = ''
+        self.bg2_image = ''
+        self.bg_color = (0, 0, 0)
 
+        self.difficulty_req = 100
+        self.enemy_spawn_time = 0
+        self.spawn_interval = 2000
+        self.enemy_speed = 2
 
+        self.floor_size = (250, 250)
+        self.bg_size = (game.SCREEN_HEIGHT, game.SCREEN_HEIGHT)
 
-    def spawn_random_enemy(self, game):
-        if game.level == 1:
-            enemy_dict = game.enemy_left
-        elif game.level == 2:
-            enemy_dict = game.enemy_right
-        else:
-            enemy_dict = {**game.enemy_left, **game.enemy_right}
+        self.floor_sprites = []
+        self.bg_sprites = []
+        self.floor_lights = None
+        self.floor_neon = None
+        self.floor_lights_pos = None
+        self.floor_neon_pos = None
 
-        enemy_key = random.choice(list(enemy_dict.keys()))
-        enemy_image_path = enemy_dict[enemy_key]
+        self.floor_index = 0
+        self.bg_index = 0
+        self.max_floor = None
+        self.max_bg = None
+        self.floor_y = 0
+        self.bg_y = 0
+        self.fl_pos = 0
+        self.fn_pos = 0
 
-        # Creating the enemy and setting its key
-        enemy = en.Enemy(enemy_image_path, game.enemy_speed)
-        enemy.key = enemy_key
+        level_config(game, self)
 
-        # Set the row based on the key given
-        if enemy_key in game.left_top_row or enemy_key in game.right_top_row:
-            enemy.rect.y = 30
-        elif enemy_key in game.left_middle_row or enemy_key in game.right_middle_row:
-            enemy.rect.y = 150
-        elif enemy_key in game.left_bottom_row or enemy_key in game.right_bottom_row:
-            enemy.rect.y = 300
-        enemy.rect.x = game.SCREEN_WIDTH
-        game.enemies.add(enemy)
-        game.all_sprites.add(enemy)
+        new_floor_pos = (0, self.floor_y)
+        new_bg_pos = (0, self.bg_y)
 
-        found_finger = None
+        # Adding initial floor chunks
+        while new_floor_pos[0] < game.SCREEN_WIDTH:
+            new_floor = bg.Terrain(self, 'floor')
+            new_floor.rect.center = new_floor_pos
+            new_floor_pos = (new_floor_pos[0] + new_floor.size[0], self.floor_y)
 
-        for hand in game.HAND_KEYS:
-            if found_finger: break
+            self.max_floor = new_floor
+            self.floor_sprites.append(new_floor)
+        # Adding initial background chunks
+        while new_bg_pos[0] < game.SCREEN_WIDTH:
+            new_bg = bg.Terrain(self, 'background')
+            new_bg.rect.center = new_bg_pos
+            new_bg_pos = (new_bg_pos[0] + new_bg.size[0], self.bg_y)
 
-            for finger in hand:
-                if found_finger: break
+            self.max_bg = new_bg
+            self.bg_sprites.append(new_bg)
 
-                for current_key in finger[2]:
-                    if current_key == enemy_key:
-                        found_finger = finger
-                        break
-
-        if found_finger: enemy.finger_highlight = found_finger
-        enemy.rect.x = game.SCREEN_WIDTH  # Start at the right edge
-        game.enemies.add(enemy)
-        game.all_sprites.add(enemy)
-
-    # Function to move to a new level once reached enough points
-    def level_player(self, game):
-        if game.player.score >= game.player.levelup_req:
-            new_req = 4
-
-            if game.player.levelup_req < 1000:
-                new_req = 4
-            elif game.player.levelup_req < 10000:
-                new_req = 3
-            elif game.player.levelup_req < 50000:
-                new_req = 2
-            elif game.player.levelup_req < 250000:
-                new_req = 1.5
-
-            game.levelup_sound.play()
-            game.player.levelup_req = int(game.player.levelup_req * new_req)
-            game.level += 1
-            game.player.level_multi += 1
-            game.player.lives += 1 if game.player.lives < 10 else 0
-
-        # Updating difficulty every frame
-        if game.level == 2:
-            game.enemy_speed = 3
-            game.spawn_interval = random.randint(1600, 2000)
-        elif game.level == 3:
-            game.enemy_speed = 3
-            game.spawn_interval = random.randint(1200, 1800)
-        elif game.level >= 4:
-            lowest_interval = 800 - (30 * game.level)
-            highest_interval = 1800 - (20 * game.level)
-            if lowest_interval < 400: lowest_interval = 400
-            if highest_interval < 1000: highest_interval = 1000
-
-            game.spawn_interval = random.randint(lowest_interval, highest_interval)
-
-            # Getting random speed value depending on corresponding weight chance
-            speed_values = [1, 2, 3]
-            speed_odds = [60, 40, 20]
-
-            if game.level >= 5:
-                speed_values = [1, 2, 3, 4, 5]
-                speed_odds = [40, 40, 30, 20, game.level]
-
-            game.enemy_speed = random.choices(speed_values, speed_odds)[0]
-
-    def check_enemy_hit(self, game, event):
-        key = pygame.key.name(event.key)
-        enemy_hit = False
-        player_action = None
-
-        for enemy in game.enemies.copy():
-            # Check if enemy is the right key
-            if enemy.key == key:
-                game.destroy_sound.play()
-                game.points_sound.play()
-
-                game.enemies.remove(enemy)
-                game.all_sprites.remove(enemy)
-
-                # Rewarding with score and combo
-                game.player.score += 10 * (game.player.combo + 1) * game.player.level_multi
-                game.player.combo += 1
-                game.player.max_combo = max(game.player.combo, game.player.max_combo)
-
-                if (game.player.combo > 0 and game.player.combo % 10 == 0
-                        and game.player.lives < 5):
-                    game.player.lives += 1
-                    game.get_life_sound.play()
-
-                enemy_hit = True
-
-                # Getting the right animation for the player to play
-                if enemy.key in game.left_top_row or enemy.key in game.right_top_row:
-                    player_action = 'right_shoot_top'
-                elif enemy.key in game.left_middle_row or enemy.key in game.right_middle_row:
-                    player_action = 'right_shoot_middle'
-                elif enemy.key in game.left_bottom_row or enemy.key in game.right_bottom_row:
-                    player_action = 'right_shoot_down'
-
-        if enemy_hit:
-            return player_action
-        else:
-            game.wrong_sound.play()
-            game.player.combo = 0
 
     # Main function to run the game
     def run(self, game):
@@ -156,15 +113,14 @@ class Level:
                     game.paused = not game.paused
                 if not game.paused and game.player.lives > 0:
                     # Checking if player hit enemy and returns the action
-                    player_action = self.check_enemy_hit(game, event)
+                    player_action = None
 
         game.player.on_input(player_action)
 
         if not game.paused and game.player.lives > 0:
             # Enemy spawning every interval
-            if current_time - game.enemy_spawn_time > game.spawn_interval:
-                self.spawn_random_enemy(game)
-                game.enemy_spawn_time = current_time
+            if current_time - self.enemy_spawn_time > self.spawn_interval:
+                self.enemy_spawn_time = current_time
 
             # Updating all sprites
             game.all_sprites.update()
@@ -195,10 +151,20 @@ class Level:
         game.left_hand.update(game.player.closest_enemy)
         game.right_hand.update(game.player.closest_enemy)
 
-        # Changing levels based off player score
-        self.level_player(game)
+        # Drawing everything
+        game.screen.fill(self.bg_color)
 
-        game.screen.blit(game.stage_back, (0, 0))
+        for sprite in self.bg_sprites:
+            if self.stage > 0: sprite.update(game)
+            sprite.draw(game.screen)
+
+        if self.floor_lights: game.screen.blit(self.floor_lights, self.fl_pos)
+        if self.floor_neon: game.screen.blit(self.floor_neon, self.fn_pos)
+
+        for sprite in self.floor_sprites:
+            if self.stage > 0: sprite.update(game)
+            sprite.draw(game.screen)
+
         game.all_sprites.draw(game.screen)
 
         game.left_hand.draw(game.screen)
@@ -206,39 +172,27 @@ class Level:
         game.player.draw(game.screen)
 
         # Setting user interface
-        score_text = game.font.render(f'Score: {game.player.score}', True, game.COLORS.white)
-        lives_text = game.font.render(f'Lives: {game.player.lives}', True, game.COLORS.white)
-        combo_text = game.font.render(f'Combo: {game.player.combo}', True, game.COLORS.white)
-        level_text = game.font.render(f'Level: {game.level}', True, game.COLORS.white)
-        next_level_text = game.font.render(f'Next level: {game.player.levelup_req} score',
-                                           True, game.COLORS.bright_yellow)
-        game.screen.blit(score_text, (10, 10))
-        game.screen.blit(lives_text, (10, 40))
-        game.screen.blit(combo_text, (10, 70))
-        game.screen.blit(level_text, (10, 100))
-        game.screen.blit(next_level_text, (10, 180))
+        distance_text = game.header_font.render(f'{game.player.distance} m', True, game.COLORS.white)
+        score_text = game.text_font.render(f'Score: {game.player.score}', True, game.COLORS.white)
+        lives_text = game.text_font.render(f'Lives: {game.player.lives}', True, game.COLORS.white)
+        combo_text = game.text_font.render(f'Combo: {game.player.combo}', True, game.COLORS.white)
 
-        if game.paused:
-            pause_text = game.font.render('PAUSED - Press ESC to continue', True,
-                                          game.COLORS.white)
-            game.screen.blit(pause_text,
-                             (game.SCREEN_WIDTH // 2 - 150, game.SCREEN_HEIGHT // 2))
+        game.screen.blit(distance_text, (10, 10))
+        game.screen.blit(score_text, (10, 50))
+        game.screen.blit(lives_text, (10, 75))
+        game.screen.blit(combo_text, (10, 100))
 
         # Game Over
         if game.player.lives <= 0:
-            game_over_text = game.font.render('GAME OVER', True, game.COLORS.red)
-            final_score_text = game.font.render(f'Final Score: {game.player.score}', True,
+            game_over_text = game.text_font.render('GAME OVER', True, game.COLORS.red)
+            final_score_text = game.text_font.render(f'Final Score: {game.player.score}', True,
                                                 game.COLORS.white)
-            level_reached_text = game.font.render(f'Congrats! You reached level {game.level}!',
-                                                  True, game.COLORS.white)
-            max_combo_text = game.font.render(f'Max Combo: {game.player.max_combo}', True,
+            max_combo_text = game.text_font.render(f'Max Combo: {game.player.max_combo}', True,
                                               game.COLORS.white)
-            restart_text = game.font.render('Press SPACE to restart or ESC to quit',
+            restart_text = game.text_font.render('Press SPACE to restart or ESC to quit',
                                             True, game.COLORS.white)
             game.screen.blit(game_over_text,
                              (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 - 100))
-            game.screen.blit(level_reached_text,
-                             (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 - 50))
             game.screen.blit(final_score_text,
                              (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 - 20))
             game.screen.blit(max_combo_text,
@@ -257,7 +211,7 @@ class Level:
                         game.running = False
                     elif event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_SPACE:
-                            game.game_state = 'menu'
+                            game.game_state = 'level'
                             waiting = False
                         elif event.key == pygame.K_ESCAPE:
                             waiting = False

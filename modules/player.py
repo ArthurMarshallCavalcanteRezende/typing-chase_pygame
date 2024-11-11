@@ -48,9 +48,9 @@ class Player(pygame.sprite.Sprite):
         self.score = 0
         self.combo = 0
         self.max_combo = 0
-        self.level_multi = 1
 
-        self.levelup_req = 800
+        self.distance = 0
+        self.difficulty = 1
         self.closest_enemy = None
 
         for sprite in self.sprite_list:

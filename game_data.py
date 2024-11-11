@@ -10,7 +10,6 @@ import pygame
 
 from modules import player as plr
 from modules import hands
-from modules import background as bg
 
 class colors:
     black = (0, 0, 0),
@@ -23,6 +22,7 @@ class colors:
     yellow = (255, 255, 0),
     bright_yellow = (255, 255, 150),
     orange = (255, 180, 0),
+    dark_orange = (120, 50, 0),
     magenta = (255, 0, 255),
     green = (0, 255, 0),
     lime = (100, 255, 130),
@@ -35,6 +35,7 @@ def load_game(game):
     # Screen size and frames per second
     game.SCREEN_WIDTH, game.SCREEN_HEIGHT = 800, 600
     game.FPS = 60
+    game.screen = pygame.display.set_mode((800, 600))
     game.COLORS = colors()
     game.level = None
 
@@ -42,11 +43,12 @@ def load_game(game):
     game.clock = pygame.time.Clock()
     game.running = True
     game.paused = False
-    game.enemy_spawn_time = 0
-    game.spawn_interval = 2000
-    game.enemy_speed = 2
     game.game_state = 'menu'
-    game.level = 1
+    game.level = None
+
+    game.LV0_NAME = '0 - TUTORIAL'
+    game.LV1_NAME = '1 - FACILITY'
+    game.LV2_NAME = '2 - TRAIN CHASE'
 
     game.BASE_FLOOR_SPEED = 5
     game.BASE_BG_SPEED = 2
@@ -141,60 +143,11 @@ def load_game(game):
     game.left_hand.side = 'left'
     game.right_hand.side = 'right'
 
-    # Stage terrain images and values
-    game.floor_image = pygame.image.load(
-        "./game_assets/stages/1/floor.png").convert_alpha()
-    game.floor_image = pygame.transform.scale(game.floor_image, (250, 250))
-
-    game.bg_image = pygame.image.load(
-        "./game_assets/stages/1/background.png").convert_alpha()
-    game.bg_image = pygame.transform.scale(
-        game.bg_image, (game.SCREEN_HEIGHT, game.SCREEN_HEIGHT))
-
-    game.bg_pillar_image = pygame.image.load(
-        "./game_assets/stages/1/background_pillar.png").convert_alpha()
-    game.bg_pillar_image = pygame.transform.scale(
-        game.bg_pillar_image, (game.SCREEN_HEIGHT, game.SCREEN_HEIGHT))
-
-    game.floor_lights = pygame.Surface((game.SCREEN_WIDTH, game.floor_image.get_size()[1] // 10))
-    game.floor_lights.fill(game.BASE_FLOOR_LIGHTS_COLOR)
-
-    game.floor_neon = pygame.Surface((game.SCREEN_WIDTH, game.floor_image.get_size()[1]))
-    game.floor_neon.fill(game.COLORS.black[0])
-
-    game.floor_index = 0
-    game.bg_index = 0
-    game.max_floor = None
-    game.max_bg = None
-
-    game.floor_y = game.SCREEN_HEIGHT - (game.floor_image.get_size()[1] // 4)
-    game.bg_y = (game.bg_image.get_size()[1] // 2)
-    new_floor_pos = (0, game.floor_y)
-    new_bg_pos = (0, game.bg_y)
-
-    # Adding initial floor chunks
-    while new_floor_pos[0] < game.SCREEN_WIDTH:
-        new_floor = bg.Terrain(game, 'floor')
-        new_floor.rect.center = new_floor_pos
-        new_floor_pos = (new_floor_pos[0] + new_floor.size[0], game.floor_y)
-        game.max_floor = new_floor
-
-        game.floor_sprites.append(new_floor)
-    # Adding initial background chunks
-    while new_bg_pos[0] < game.SCREEN_WIDTH:
-        new_bg = bg.Terrain(game, 'background')
-        new_bg.rect.center = new_bg_pos
-        new_bg_pos = (new_bg_pos[0] + new_bg.size[0], game.bg_y)
-        game.max_bg = new_bg
-
-        game.background_sprites.append(new_bg)
+    game.menu_ui = pygame.image.load(f"./game_assets/side_interface.png").convert_alpha()
+    game.menu_ui = pygame.transform.scale(game.menu_ui, (game.SCREEN_WIDTH, game.SCREEN_HEIGHT))
+    game.menu_ui.fill(game.COLORS.black[0], special_flags=pygame.BLEND_RGBA_MULT)
 
     # Sounds
-    game.first_chase_music = pygame.mixer.Sound('./game_assets/RevengeEnemy.mp3')
-    game.first_chase_music.set_volume(0.2)
-    game.second_chase_music = pygame.mixer.Sound('./game_assets/Dragon Road - Day.mp3')
-    game.second_chase_music.set_volume(0.2)
-
     game.destroy_sound = pygame.mixer.Sound('./game_assets/sfx/explosion.wav')
     game.destroy_sound.set_volume(0.3)
     game.points_sound = pygame.mixer.Sound('./game_assets/sfx/points.wav')
@@ -209,4 +162,6 @@ def load_game(game):
     game.get_life_sound.set_volume(0.5)
 
     # Fonts
-    game.font = pygame.font.Font(None, 36)
+    game.title_font = pygame.font.Font('./game_assets/font.otf', 90)
+    game.header_font = pygame.font.Font('./game_assets/font.otf', 40)
+    game.text_font = pygame.font.Font('./game_assets/font.otf', 32)

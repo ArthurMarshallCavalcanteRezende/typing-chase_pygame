@@ -51,25 +51,25 @@ def update_terrain(game):
         game.floor_sprites.remove(min_floor)
 
 class Terrain:
-    def __init__(self, game, terrain_type):
+    def __init__(self, level, terrain_type):
         self.name = terrain_type
         self.image = ''
         self.index = 0
 
         # Choosing what type of terrain is being spawned
         if terrain_type == 'floor':
-            game.floor_index += 1
-            self.index = game.floor_index
-            self.image = self.image = game.floor_image.copy()
+            level.floor_index += 1
+            self.index = level.floor_index
+            self.image = self.image = level.floor_image.copy()
         elif terrain_type == 'background':
-            game.bg_index += 1
-            self.index = game.bg_index
+            level.bg_index += 1
+            self.index = level.bg_index
 
             # Spawn pillar wall every certain walls
             if self.index % 4 == 0:
-                self.image = game.bg_pillar_image.copy()
+                self.image = level.bg2_image.copy()
             else:
-                self.image = game.bg_image.copy()
+                self.image = level.bg1_image.copy()
 
         self.size = self.image.get_size()
         self.rect = self.image.get_rect()

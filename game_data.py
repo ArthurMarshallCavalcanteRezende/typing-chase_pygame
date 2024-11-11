@@ -48,8 +48,8 @@ def load_game(game):
     game.level = None
 
     game.LV0_NAME = '0 - TUTORIAL'
-    game.LV1_NAME = '1 - FACILITY'
-    game.LV2_NAME = '2 - TRAIN CHASE'
+    game.LV1_NAME = '1 - Chapter 1'
+    game.LV2_NAME = '2 - Chapter 2'
 
     game.BASE_FLOOR_SPEED = 5
     game.BASE_BG_SPEED = 2
@@ -86,17 +86,12 @@ def load_game(game):
         (game.SCREEN_WIDTH, game.SCREEN_HEIGHT))
     pygame.display.set_caption("Typing Chase - PyGame Edition - 2024-10-26")
 
-    # Enemy images mapping
-    game.all_keys = [
-        # Left keys
-        'q', 'w', 'e', 'r', 't', 'a', 's', 'd', 'f', 'g'
-        'z', 'x', 'c', 'v', 'b'
-
-        # Right keys
-        'y', 'u', 'i', 'o', 'p', 'h', 'j', 'k',
-        'l',  # 'ç' -- not working yet
-        'n', 'm', ',', '.', ';'
-    ]
+    # Enemy sprites
+    game.target = '/game_assets/enemy_sprites/target.png'
+    game.minibot = './game_assets/enemy_sprites/minibot.png'
+    game.type1_robot = '/game_assets/enemy_sprites/classB_robot.png'
+    game.type2_robot = '/game_assets/enemy_sprites/classC_robot.png'
+    game.type1_robot = '/game_assets/enemy_sprites/classD_robot.png'
 
     game.enemy_sprites = './game_assets/enemy_sprites/'
 

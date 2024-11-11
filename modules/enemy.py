@@ -16,9 +16,20 @@ class Enemy(pygame.sprite.Sprite):
         filename = image_path.split('/')[-1]
         return filename[0].lower()
 
-    def update(self):
+    def update_lvl1(self):
         self.rect.x -= self.speed
         if self.rect.x < -self.rect.width:
+            self.kill()
+
+    def update_lvl2(self):
+        direction_x = self.player.rect.x - self.rect.x
+        direction_y = self.player.rect.y - self.rect.y
+        distance = (direction_x ** 2 + direction_y ** 2) ** 0.5
+
+        elapsed_time = (pygame.time.get_ticks() - self.spawn_time) / 1000
+        if elapsed_time >= 8:
+            self.rect.x += self.speed * (direction_x / distance)
+            self.rect.y += self.speed * (direction_y / distance)
             self.kill()
 
 

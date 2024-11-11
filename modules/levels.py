@@ -128,28 +128,29 @@ class Level:
         closest_to_plr = [None, 99999]
 
         # Checking enemy conditions
-        for enemy in game.enemies:
-            # If enemy is the current to the player
-            player_magnitude = enemy.rect.x - (game.SCREEN_WIDTH // 2) - 50
-            if player_magnitude < closest_to_plr[1]:
-                closest_to_plr = [enemy, player_magnitude]
+        if level.stage == 1:
+            for enemy in game.enemies:
+                # If enemy is the current to the player
+                player_magnitude = enemy.rect.x - (game.SCREEN_WIDTH // 2) - 50
+                if player_magnitude < closest_to_plr[1]:
+                    closest_to_plr = [enemy, player_magnitude]
 
-            # If enemy passed the limit to damage player
-            if enemy.rect.x < (game.SCREEN_WIDTH // 2) - 50:
-                game.destroy_sound.play()
-                game.damage_sound.play()
+                # If enemy passed the limit to damage player
+                if enemy.rect.x < (game.SCREEN_WIDTH // 2) - 50:
+                    game.destroy_sound.play()
+                    game.damage_sound.play()
 
-                game.player.lives -= 1
-                game.player.combo = 0
-                game.enemies.remove(enemy)
-                game.all_sprites.remove(enemy)
+                    game.player.lives -= 1
+                    game.player.combo = 0
+                    game.enemies.remove(enemy)
+                    game.all_sprites.remove(enemy)
 
-        # Updating the closest enemy to the player
-        if closest_to_plr[0]:
-            game.player.closest_enemy = closest_to_plr[0]
+            # Updating the closest enemy to the player
+            if closest_to_plr[0]:
+                game.player.closest_enemy = closest_to_plr[0]
 
-        game.left_hand.update(game.player.closest_enemy)
-        game.right_hand.update(game.player.closest_enemy)
+            game.left_hand.update(game.player.closest_enemy)
+            game.right_hand.update(game.player.closest_enemy)
 
         game.tick += 1
         distance_threshold = 15 - game.player.speed if game.player.speed < 15 else 14

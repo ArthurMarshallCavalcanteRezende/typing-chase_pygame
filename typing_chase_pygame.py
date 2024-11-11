@@ -84,10 +84,13 @@ def run(game):
                 if game.game_state == 'menu':
                     if event.key == pygame.K_0:
                         game.level = levels.Level(game, 0)
+                        game.menu_music.stop()
                     elif event.key == pygame.K_1:
                         game.level = levels.Level(game, 1)
+                        game.menu_music.stop()
                     elif event.key == pygame.K_2:
                         game.level = levels.Level(game, 2)
+                        game.menu_music.stop()
 
                     if event.key == pygame.K_RETURN:
                         game.game_state = 'level'

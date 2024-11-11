@@ -111,6 +111,18 @@ class Level:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     game.paused = not game.paused
+
+                elif not game.paused and game.player.lives > 0 and self.remaining_word:
+                    if event.unicode == self.remaining_word[0]:
+                        self.remaining_word = self.remaining_word[1:]
+                        if not self.remaining_word:
+                            if game.player.closest_enemy:
+                                game.enemies.remove(game.player.closest_enemy)
+                                game.all_sprites.remove(game.player.closest_enemy)
+                                game.player.score += 100
+                            self.target_word = load_random_word('./path/to/words.csv')
+                            self.remaining_word = self.target_word
+
                 if not game.paused and game.player.lives > 0:
                     # Checking if player hit enemy and returns the action
                     player_action = None
@@ -128,7 +140,7 @@ class Level:
         closest_to_plr = [None, 99999]
 
         # Checking enemy conditions
-        if level.stage == 1:
+        if self.stage == 1:
             for enemy in game.enemies:
                 # If enemy is the current to the player
                 player_magnitude = enemy.rect.x - (game.SCREEN_WIDTH // 2) - 50
@@ -181,6 +193,11 @@ class Level:
         score_text = game.header_font.render(f' {game.player.score}', True, game.COLORS.white)
         lives_text = game.text_font.render(f'Lives: {game.player.lives}', True, game.COLORS.white)
         combo_text = game.text_font.render(f'Combo: {game.player.combo}', True, game.COLORS.white)
+
+        # Actual word indicator
+        font = pygame.font.Font(None, 36)
+        word_text = font.render(self.remaining_word, True, game.COLORS.white)
+        game.screen.blit(word_text, (10, game.SCREEN_HEIGHT - 40))
 
         if game.level.stage > 0:
             game.screen.blit(distance_text, (10, -5))

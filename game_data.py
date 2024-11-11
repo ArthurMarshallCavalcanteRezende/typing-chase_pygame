@@ -164,6 +164,28 @@ def load_game(game):
     game.get_life_sound = pygame.mixer.Sound('./game_assets/sfx/get_life.wav')
     game.get_life_sound.set_volume(0.5)
 
+    # Musics
+    game.menu_music = pygame.mixer.Sound('./game_assets/music/Jesse James.mp3')
+    game.menu_music.set_volume(0.5)
+    game.lvl0_music = pygame.mixer.Sound('./game_assets/music/lvl0.mp3')
+    game.lvl0_music.set_volume(0.5)
+    game.lvl1_music = pygame.mixer.Sound('./game_assets/music/level1.mp3')
+    game.lvl1_music.set_volume(0.5)
+    game.menace_music = pygame.mixer.Sound('./game_assets/music/The Ring - Klonoa.mp3')
+    game.menace_music.set_volume(0.5)
+    game.lvl2_music = pygame.mixer.Sound('./game_assets/music/level2.mp3')
+    game.lvl2_music.set_volume(0.5)
+
+    # ZH4R0V Dubs
+    game.zharov_speech1 = pygame.mixer.Sound('./game_assets/stages/2/zharov_speech1.mp3')
+    game.zharov_speech1.set_volume(0.8)
+    game.zharov_speech2 = pygame.mixer.Sound('./game_assets/stages/2/zharov_speech2.mp3')
+    game.zharov_speech2.set_volume(0.8)
+    game.zharov_power = pygame.mixer.Sound('./game_assets/stages/2/zharov_power.mp3')
+    game.zharov_power.set_volume(0.8)
+    game.zharov_speech3 = pygame.mixer.Sound('./game_assets/stages/2/zharov_speech3.mp3')
+    game.zharov_speech3.set_volume(0.8)
+
     # Fonts
     game.title_font = pygame.font.Font('./game_assets/font.otf', 90)
     game.large_font = pygame.font.Font('./game_assets/font.otf', 60)

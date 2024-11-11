@@ -27,9 +27,10 @@ class Enemy(pygame.sprite.Sprite):
         distance = (direction_x ** 2 + direction_y ** 2) ** 0.5
 
         elapsed_time = (pygame.time.get_ticks() - self.spawn_time) / 1000
-        if elapsed_time >= 8:
+        if elapsed_time == 7:
             self.rect.x += self.speed * (direction_x / distance)
             self.rect.y += self.speed * (direction_y / distance)
+        if elapsed_time > 8:
             self.kill()
 
 

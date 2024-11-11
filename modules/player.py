@@ -48,6 +48,7 @@ class Player(pygame.sprite.Sprite):
         self.score = 0
         self.combo = 0
         self.max_combo = 0
+        self.speed = 3
 
         self.distance = 0
         self.difficulty = 1

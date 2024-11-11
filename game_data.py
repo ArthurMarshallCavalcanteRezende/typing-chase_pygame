@@ -35,6 +35,7 @@ def load_game(game):
     # Screen size and frames per second
     game.SCREEN_WIDTH, game.SCREEN_HEIGHT = 800, 600
     game.FPS = 60
+    game.tick = 0
     game.screen = pygame.display.set_mode((800, 600))
     game.COLORS = colors()
     game.level = None
@@ -52,9 +53,13 @@ def load_game(game):
 
     game.BASE_FLOOR_SPEED = 5
     game.BASE_BG_SPEED = 2
-    game.BASE_FLOOR_LIGHTS_COLOR = game.COLORS.bright_cyan[0]
+    game.BASE_FLOOR_LIGHTS_COLOR = game.COLORS.bright_cyan
     game.floor_speed = game.BASE_FLOOR_SPEED
     game.bg_speed = game.BASE_BG_SPEED
+
+    game.DARK_FILTER = pygame.Surface(
+        (game.SCREEN_WIDTH, game.SCREEN_HEIGHT), pygame.SRCALPHA)
+    game.DARK_FILTER.fill((0, 0, 0, 100))
 
     game.HAND_COLORS = {
         'left': {
@@ -147,6 +152,9 @@ def load_game(game):
     game.menu_ui = pygame.transform.scale(game.menu_ui, (game.SCREEN_WIDTH, game.SCREEN_HEIGHT))
     game.menu_ui.fill(game.COLORS.black[0], special_flags=pygame.BLEND_RGBA_MULT)
 
+    game.score_image = pygame.image.load(f"./game_assets/coins.png").convert_alpha()
+    game.score_image = pygame.transform.scale(game.score_image, (40, 40))
+
     # Sounds
     game.destroy_sound = pygame.mixer.Sound('./game_assets/sfx/explosion.wav')
     game.destroy_sound.set_volume(0.3)
@@ -163,5 +171,6 @@ def load_game(game):
 
     # Fonts
     game.title_font = pygame.font.Font('./game_assets/font.otf', 90)
+    game.large_font = pygame.font.Font('./game_assets/font.otf', 60)
     game.header_font = pygame.font.Font('./game_assets/font.otf', 40)
     game.text_font = pygame.font.Font('./game_assets/font.otf', 32)

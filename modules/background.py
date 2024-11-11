@@ -1,54 +1,58 @@
 import pygame
 
-def update_terrain(game):
+def update_terrain(game, level, stopped):
     min_floor = None
     min_bg = None
 
-    for background in game.background_sprites:
-        background.update(game)
-        background.draw(game.screen)
+    for sprite in level.bg_sprites:
+        if level.stage > 0 and not stopped: sprite.update(game)
+        sprite.draw(game)
 
-        if background.name == 'background':
+        if sprite.name == 'background':
             if not min_bg:
-                min_bg = background
-            elif min_bg.index > background.index:
-                min_bg = background
+                min_bg = sprite
+            elif min_bg.index > sprite.index:
+                min_bg = sprite
 
     # Detect if there should be more background chunks created after fully appearing
-    if game.max_bg.rect.centerx <= game.SCREEN_WIDTH + game.max_bg.size[0]:
-        new_bg = Terrain(game, 'background')
-        new_bg.rect.center = (game.max_bg.rect.centerx + new_bg.size[0], game.bg_y)
-        game.background_sprites.append(new_bg)
-        game.max_bg = new_bg
+    can_spawn = level.max_bg.rect.centerx <= game.SCREEN_WIDTH + level.max_bg.size[0]
+
+    if can_spawn and not stopped:
+        new_bg = Terrain(level, 'background')
+        new_bg.rect.center = (level.max_bg.rect.centerx + new_bg.size[0], level.bg_y)
+        level.bg_sprites.append(new_bg)
+        level.max_bg = new_bg
 
     # Detect if you should delete background after fully dissapearing
     if min_bg.rect.x < 0 - min_bg.size[0]:
-        game.background_sprites.remove(min_bg)
+        level.bg_sprites.remove(min_bg)
 
     # Drawing the lights that fill transparent parts in floors
-    game.screen.blit(game.floor_neon, (0, game.floor_y // 1.25))
-    game.screen.blit(game.floor_lights, (0, game.floor_y // 1.3))
+    if level.floor_lights: game.screen.blit(level.floor_lights, level.fl_pos)
+    if level.floor_neon: game.screen.blit(level.floor_neon, level.fn_pos)
 
-    for floor in game.floor_sprites:
-        floor.update(game)
-        floor.draw(game.screen)
+    for sprite in level.floor_sprites:
+        if level.stage > 0 and not stopped: sprite.update(game)
+        sprite.draw(game)
 
-        if floor.name == 'floor':
+        if sprite.name == 'floor':
             if not min_floor:
-                min_floor = floor
-            elif min_floor.index > floor.index:
-                min_floor = floor
+                min_floor = sprite
+            elif min_floor.index > sprite.index:
+                min_floor = sprite
 
     # Detect if there should be more floor chunks created after fully appearing
-    if game.max_floor.rect.centerx <= game.SCREEN_WIDTH + game.max_floor.size[0]:
-        new_floor = Terrain(game, 'floor')
-        new_floor.rect.center = (game.max_floor.rect.centerx + new_floor.size[0], game.floor_y)
-        game.floor_sprites.append(new_floor)
-        game.max_floor = new_floor
+    can_spawn = level.max_floor.rect.centerx <= game.SCREEN_WIDTH + level.max_floor.size[0]
+
+    if can_spawn and not stopped:
+        new_floor = Terrain(level, 'floor')
+        new_floor.rect.center = (level.max_floor.rect.centerx + new_floor.size[0], level.floor_y)
+        level.floor_sprites.append(new_floor)
+        level.max_floor = new_floor
 
     # Detect if should delete floor after fully dissapearing
     if min_floor.rect.x < 0 - min_floor.size[0]:
-        game.floor_sprites.remove(min_floor)
+        level.floor_sprites.remove(min_floor)
 
 class Terrain:
     def __init__(self, level, terrain_type):
@@ -83,5 +87,5 @@ class Terrain:
 
         self.rect.x -= speed
 
-    def draw(self, screen):
-        screen.blit(self.image, self.rect)
+    def draw(self, game):
+        game.screen.blit(self.image, self.rect)

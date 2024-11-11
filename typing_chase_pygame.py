@@ -14,18 +14,18 @@ def menu_interface(game):
 
     # Adding level background and changes if there is a level choosen
     if game.level:
-        game.screen.fill(game.COLORS.black)
+        game.screen.fill(game.COLORS.dark_grey)
 
         for sprite in game.level.bg_sprites:
-            sprite.draw(game.screen)
+            sprite.draw(game)
 
         if game.level.floor_lights: game.screen.blit(game.level.floor_lights, game.level.fl_pos)
         if game.level.floor_neon: game.screen.blit(game.level.floor_neon, game.level.fn_pos)
 
         for sprite in game.level.floor_sprites:
-            sprite.draw(game.screen)
+            sprite.draw(game)
 
-        description = game.text_font.render(f'- - - - =| {game.level.description} |',
+        description = game.text_font.render(f'- - - - =|  {game.level.description}  |',
                                             True, game.COLORS.white)
         game.screen.blit(description, (20, game.SCREEN_HEIGHT - 40))
         if game.level.stage == 0: lv0_color = game.COLORS.yellow
@@ -60,6 +60,8 @@ def reset_game(game):
     game.player.combo = 0
     game.player.max_combo = 0
     game.player.difficulty = 1
+    game.player.speed = 3
+    game.player.distance = 0
 
     game.enemy_speed = 2
     game.spawn_interval = 2000
@@ -90,11 +92,17 @@ def run(game):
                     if event.key == pygame.K_RETURN:
                         game.game_state = 'level'
 
+                if game.game_state == 'level':
+                    if event.key == pygame.K_ESCAPE:
+                        game.game_state = 'pause'
+
         # Loading different things depending on game state
         if game.game_state == 'menu':
             menu_interface(game)
         elif game.level and game.game_state == 'level':
             game.level.run(game)
+        elif game.level and game.game_state == 'pause':
+            game.level.pause(game)
 
         # Updating the screen
         pygame.display.flip()

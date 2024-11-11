@@ -32,9 +32,9 @@ def level_config(game, level):
         level.floor_lights.fill(game.BASE_FLOOR_LIGHTS_COLOR)
         level.fl_pos = (0, game.SCREEN_HEIGHT - 185)
 
-        level.floor_neon = pygame.Surface((game.SCREEN_WIDTH, level.floor_y // 1.3))
+        level.floor_neon = pygame.Surface((game.SCREEN_WIDTH, level.floor_size[1] // 1.3))
         level.floor_neon.fill(game.COLORS.black[0])
-        level.fn_pos = (0, level.floor_y)
+        level.fn_pos = (0, game.SCREEN_HEIGHT - 170)
     if level.stage == 2:
         level.name = game.LV2_NAME
         level.description = "Freeze, ZH4R0V!!!"
@@ -151,19 +151,23 @@ class Level:
         game.left_hand.update(game.player.closest_enemy)
         game.right_hand.update(game.player.closest_enemy)
 
+        game.tick += 1
+        distance_threshold = 15 - game.player.speed if game.player.speed < 15 else 14
+
+        if game.tick % distance_threshold == 0:
+            game.player.distance += 1
+
+        self.draw(game)
+
+        if game.player.lives <= 0: self.game_over(game)
+
+        game.clock.tick(game.FPS)
+
+    def draw(self, game, stopped=False):
         # Drawing everything
         game.screen.fill(self.bg_color)
 
-        for sprite in self.bg_sprites:
-            if self.stage > 0: sprite.update(game)
-            sprite.draw(game.screen)
-
-        if self.floor_lights: game.screen.blit(self.floor_lights, self.fl_pos)
-        if self.floor_neon: game.screen.blit(self.floor_neon, self.fn_pos)
-
-        for sprite in self.floor_sprites:
-            if self.stage > 0: sprite.update(game)
-            sprite.draw(game.screen)
+        bg.update_terrain(game, game.level, stopped)
 
         game.all_sprites.draw(game.screen)
 
@@ -172,50 +176,75 @@ class Level:
         game.player.draw(game.screen)
 
         # Setting user interface
-        distance_text = game.header_font.render(f'{game.player.distance} m', True, game.COLORS.white)
-        score_text = game.text_font.render(f'Score: {game.player.score}', True, game.COLORS.white)
+        distance_text = game.large_font.render(f'{game.player.distance} m', True, game.COLORS.white)
+        score_text = game.header_font.render(f' {game.player.score}', True, game.COLORS.white)
         lives_text = game.text_font.render(f'Lives: {game.player.lives}', True, game.COLORS.white)
         combo_text = game.text_font.render(f'Combo: {game.player.combo}', True, game.COLORS.white)
 
-        game.screen.blit(distance_text, (10, 10))
-        game.screen.blit(score_text, (10, 50))
-        game.screen.blit(lives_text, (10, 75))
-        game.screen.blit(combo_text, (10, 100))
+        if game.level.stage > 0:
+            game.screen.blit(distance_text, (10, -5))
+            game.screen.blit(score_text, (50, 70))
+            game.screen.blit(game.score_image, (5, 80))
+        game.screen.blit(lives_text, (10, game.SCREEN_HEIGHT - 80))
+        game.screen.blit(combo_text, (10, game.SCREEN_HEIGHT - 50))
 
+    def game_over(self, game):
         # Game Over
-        if game.player.lives <= 0:
-            game_over_text = game.text_font.render('GAME OVER', True, game.COLORS.red)
-            final_score_text = game.text_font.render(f'Final Score: {game.player.score}', True,
-                                                game.COLORS.white)
-            max_combo_text = game.text_font.render(f'Max Combo: {game.player.max_combo}', True,
-                                              game.COLORS.white)
-            restart_text = game.text_font.render('Press SPACE to restart or ESC to quit',
-                                            True, game.COLORS.white)
-            game.screen.blit(game_over_text,
-                             (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 - 100))
-            game.screen.blit(final_score_text,
-                             (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 - 20))
-            game.screen.blit(max_combo_text,
-                             (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 + 10))
-            game.screen.blit(restart_text,
-                             (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 + 70))
-            pygame.display.flip()
+        self.draw(game, True)
 
-            # Wait for player input
-            waiting = True
-
-            while waiting and game.running:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        waiting = False
-                        game.running = False
-                    elif event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_SPACE:
-                            game.game_state = 'level'
-                            waiting = False
-                        elif event.key == pygame.K_ESCAPE:
-                            waiting = False
-                            game.running = False
-
+        game_over_text = game.text_font.render('GAME OVER', True, game.COLORS.red)
+        final_score_text = game.text_font.render(f'Final Score: {game.player.score}', True,
+                                            game.COLORS.white)
+        max_combo_text = game.text_font.render(f'Max Combo: {game.player.max_combo}', True,
+                                          game.COLORS.white)
+        restart_text = game.text_font.render('Press SPACE to restart or ESC to quit',
+                                        True, game.COLORS.white)
+        game.screen.blit(game_over_text,
+                         (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 - 100))
+        game.screen.blit(final_score_text,
+                         (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 - 20))
+        game.screen.blit(max_combo_text,
+                         (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 + 10))
+        game.screen.blit(restart_text,
+                         (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 + 70))
         pygame.display.flip()
-        game.clock.tick(game.FPS)
+
+        # Wait for player input
+        waiting = True
+
+        while waiting and game.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    waiting = False
+                    game.running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
+                        game.game_state = 'menu'
+                        waiting = False
+
+    def pause(self, game):
+        while game.game_state == 'pause' and game.running:
+            self.draw(game, True)
+            game.screen.blit(game.DARK_FILTER, (0, 0))
+
+            pause_text1 = game.title_font.render('PAUSED', True, game.COLORS.bright_yellow)
+            pause_text2 = game.text_font.render('> SPACE: resume game', True, game.COLORS.white)
+            pause_text3 = game.text_font.render('> ESC: back to menu', True, game.COLORS.white)
+
+            game.screen.blit(pause_text1,
+                             (game.SCREEN_WIDTH // 2 - 120, 100))
+            game.screen.blit(pause_text2,
+                             (game.SCREEN_WIDTH // 2 - 120, 220))
+            game.screen.blit(pause_text3,
+                             (game.SCREEN_WIDTH // 2 - 120, 260))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    game.running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
+                        game.game_state = 'level'
+                    elif event.key == pygame.K_ESCAPE:
+                        game.game_state = 'menu'
+
+            pygame.display.flip()

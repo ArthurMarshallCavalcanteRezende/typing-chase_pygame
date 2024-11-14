@@ -227,6 +227,7 @@ class Level:
 
         current_time = pygame.time.get_ticks()
         enemy_hit = False
+        enemy_killed = False
         closest_to_plr = [None, 99999]
 
         # Checking enemy conditions
@@ -236,17 +237,20 @@ class Level:
             if (game.player.key_pressed == enemy.remaining_text[0]
                 and enemy.rect.x < game.SCREEN_WIDTH):
                 enemy.remaining_text = enemy.remaining_text[1:]
+                enemy_hit = True
 
                 if not enemy.remaining_text:
                     self.enemy_list.remove(enemy)
-                    enemy_hit = True
+                    enemy_killed = True
 
-                    game.player.combo += 1
+                    game.player.combo += 1 if len(enemy.target_text) <= 3 else 3
                     if game.player.combo > game.player.max_combo:
-                        game.player.max_combo += 1
+                        game.player.max_combo += 1 if len(enemy.target_text) <= 3 else 3
 
                     to_gain = len(enemy.target_text) * 10 * game.player.max_combo
                     game.player.run_score += to_gain * self.stage
+
+                game.shoot_sound.play()
 
             if enemy in self.enemy_list:
                 # If enemy is the current to the player
@@ -264,15 +268,18 @@ class Level:
                     self.enemy_list.remove(enemy)
                     game.all_sprites.remove(enemy)
 
+        if enemy_killed:
+            game.destroy_sound.play()
+            game.points_sound.play()
+        elif game.player.key_pressed and not enemy_hit:
+            game.wrong_sound.play()
+            game.player.combo -= 1 if game.player.combo > 0 else 0
+
         game.player.key_pressed = None
 
         # Updating the closest enemy to the player
         if closest_to_plr[0]:
             game.player.closest_enemy = closest_to_plr[0]
-
-        if enemy_hit:
-            game.destroy_sound.play()
-            game.points_sound.play()
 
         game.player.on_input(game)
 

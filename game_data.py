@@ -180,6 +180,8 @@ def load_game(game):
     game.wrong_sound.set_volume(0.4)
     game.get_life_sound = pygame.mixer.Sound('./game_assets/sfx/get_life.wav')
     game.get_life_sound.set_volume(0.5)
+    game.shoot_sound = pygame.mixer.Sound('./game_assets/sfx/shoot.wav')
+    game.shoot_sound.set_volume(0.3)
 
     # ZH4R0V Dubs
     game.zharov_speech1 = pygame.mixer.Sound('./game_assets/stages/2/zharov_speech1.mp3')

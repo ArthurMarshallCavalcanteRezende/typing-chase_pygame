@@ -8,10 +8,10 @@ so you don't have to constantly get them from other scripts.
 
 import pygame
 import csv
-import random
 
 from modules import player as plr
 from modules import hands
+from modules import sound
 
 class colors:
     black = (0, 0, 0),
@@ -41,6 +41,7 @@ def load_game(game):
     game.screen = pygame.display.set_mode((800, 600))
     game.COLORS = colors()
     game.level = None
+    game.sound = sound.Sound('./game_assets/music/', 'mp3')
 
     # game loop
     game.clock = pygame.time.Clock()
@@ -161,12 +162,6 @@ def load_game(game):
     game.wrong_sound.set_volume(0.4)
     game.get_life_sound = pygame.mixer.Sound('./game_assets/sfx/get_life.wav')
     game.get_life_sound.set_volume(0.5)
-
-    # Musics
-    game.menu_music = pygame.mixer.Sound('./game_assets/music/Jesse James.mp3')
-    game.menu_music.set_volume(0.15)
-    game.menace_music = pygame.mixer.Sound('./game_assets/music/The Ring - Klonoa.mp3')
-    game.menace_music.set_volume(0.4)
 
     # ZH4R0V Dubs
     game.zharov_speech1 = pygame.mixer.Sound('./game_assets/stages/2/zharov_speech1.mp3')

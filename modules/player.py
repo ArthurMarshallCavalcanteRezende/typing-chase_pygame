@@ -68,22 +68,22 @@ class Player(pygame.sprite.Sprite):
         self.sprite_list = []
         self.running_list = []
 
-        # Idle sprites
-        self.idle = Sprite(self, 'idle', 'idle')
-
-        # Running sprites
-        self.run_body = Sprite(self, 'run_body', 'run/body')
+        # Left sprites put first so the game always draws them behind others
         self.run_left = Sprite(self, 'run_left', 'run/left_run')
-        self.run_right = Sprite(self, 'run_right', 'run/right_run')
-        self.running_list.append(self.run_body)
-        self.running_list.append(self.run_left)
-        self.running_list.append(self.run_right)
-
-        # Shooting sprites
         self.left_shoot = Sprite(self, 'left_shoot', 'shoot/left')
-        self.right_shoot = Sprite(self, 'right_shoot', 'shoot/right')
         self.run_left_shoot = Sprite(self, 'run_left_shoot', 'run/left_shoot')
+        self.running_list.append(self.run_left)
+
+        # Main body sprites
+        self.idle = Sprite(self, 'idle', 'idle')
+        self.run_body = Sprite(self, 'run_body', 'run/body')
+
+        # Right sprites put last so the game always draws them on top of others
+        self.run_right = Sprite(self, 'run_right', 'run/right_run')
+        self.right_shoot = Sprite(self, 'right_shoot', 'shoot/right')
         self.run_right_shoot = Sprite(self, 'run_right_shoot', 'run/right_shoot')
+        self.running_list.append(self.run_body)
+        self.running_list.append(self.run_right)
 
         self.rect = pygame.Rect(0, 0, IMG_SIZE, IMG_SIZE)
         self.rect.center = position
@@ -107,6 +107,9 @@ class Player(pygame.sprite.Sprite):
 
 
     def reset_anim(self):
+        self.shooting = False
+        print('reset anims')
+
         for sprite in self.sprite_list:
             sprite.visible = False
 
@@ -118,6 +121,8 @@ class Player(pygame.sprite.Sprite):
 
     # Handle the basics of shooting animation
     def shoot_anim(self, side):
+        self.shooting = True
+
         for sprite in self.sprite_list:
             sprite.visible = False
 
@@ -138,12 +143,14 @@ class Player(pygame.sprite.Sprite):
 
         self.shoot_visual_cd[2] = True
 
-    def on_input(self, action):
-        if action:
-            if action == 'shoot_left':
+    def on_input(self, game):
+        if game.player.action:
+            if game.player.action == 'shoot_left':
                 self.shoot_anim('left')
-            elif action == 'shoot_right':
+            elif game.player.action == 'shoot_right':
                 self.shoot_anim('right')
+
+            game.player.action = None
         else:
             # Dealing with changing visuals back to idle or action form after some time
             if self.shoot_visual_cd[2]: self.shoot_visual_cd[0] += 1
@@ -160,6 +167,7 @@ class Player(pygame.sprite.Sprite):
         # Drawing visible sprites and positioning them with offsets
 
         for sprite in self.sprite_list:
+            if not stopped: sprite.update()
+
             if sprite.visible:
-                if not stopped: sprite.update()
                 sprite.draw(game)

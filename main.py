@@ -42,7 +42,6 @@ if __name__ == '__main__':
 
     try:
         # Running the game
-        game.menu_music.play(-1)
         typing_chase_pygame.run(game)
     except Exception as e:
         print(f"Error while trying to run TYPING-CHASE: {e}")

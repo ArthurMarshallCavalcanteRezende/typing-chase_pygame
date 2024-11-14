@@ -6,11 +6,7 @@ from modules import enemy
 
 pygame.mixer.init()
 
-menu_music = './game_assets/music/Jesse James.mp3'
-lvl0_music = './game_assets/music/level0.mp3'
-lvl1_music = './game_assets/music/level1.mp3'
 menace_music = './game_assets/music/The Ring - Klonoa.mp3'
-lvl2_music = './game_assets/music/level2.mp3'
 
 def load_random_word(file_path):
     with open(file_path, 'r') as file:
@@ -18,9 +14,29 @@ def load_random_word(file_path):
         words = [row[0] for row in reader]
     return random.choice(words)
 
+
+def reset_game(game):
+    """RESET ALL GAME VARIABLES FOR RESTART OR NEW LEVEL"""
+    game.sound.play('menu', -1)
+
+    game.player.lives = 3
+    game.player.combo = 0
+    game.player.max_combo = 0
+    game.player.difficulty = 1
+    game.player.speed = 3
+    game.player.distance = 0
+
+    game.enemy_speed = 2
+    game.spawn_interval = 2000
+
+    game.all_sprites.empty()
+    game.game_state = 'menu'
+    game.paused = False
+
+
 def level_config(game, level):
     level.assets = f"./game_assets/stages/{level.stage}"
-    level.music = f"./game_assets/music/level{level.stage}.mp3"
+    level.music = f"level{level.stage}"
 
     # Loading proper images
     level.floor_image = pygame.image.load(f"{level.assets}/floor.png").convert_alpha()
@@ -73,6 +89,7 @@ class Level:
         self.enemy_spawn_time = 0
         self.spawn_interval = 2000
         self.enemy_speed = 2
+        self.distance_per_frame = 1
 
         self.floor_size = (250, 250)
         self.bg_size = (game.SCREEN_HEIGHT, game.SCREEN_HEIGHT)
@@ -126,6 +143,7 @@ class Level:
             self.spawn_max = 4
             self.enemy_speed = 3
             self.has_words = True
+            game.player.speed = 15
 
         level_config(game, self)
 
@@ -172,10 +190,7 @@ class Level:
     # Main function to run the game
     def run(self, game):
         if not self.started:
-            game.menu_music.stop()
-            pygame.mixer.music.load(self.music)
-            pygame.mixer.music.play(-1)
-            pygame.mixer.music.set_volume(0.3)
+            game.sound.play(self.music, -1)
 
             if self.stage == 0 or self.stage == 2:
                 game.player.is_running = False
@@ -201,7 +216,7 @@ class Level:
                         to_gain = len(enemy.target_text) * 10 * game.player.max_combo
                         game.player.score += to_gain * self.stage
 
-        game.player.on_input(game.player.action)
+        game.player.on_input(game)
 
         if not game.paused and game.player.lives > 0:
             # Enemy spawning every interval
@@ -239,22 +254,26 @@ class Level:
         game.right_hand.update(game.player.closest_enemy)
 
         game.tick += 1
-        distance_threshold = 15 - game.player.speed if game.player.speed < 15 else 14
+        distance_threshold = 15 - (game.player.speed if game.player.speed < 15 else 14)
 
         if game.tick % distance_threshold == 0:
-            game.player.distance += 1
+            if self.stage != 0:
+                game.player.distance += self.distance_per_frame
+
+        game.floor_speed = game.BASE_FLOOR_SPEED + game.player.speed
+        game.bg_speed = game.BASE_BG_SPEED + (game.player.speed // 2)
 
         self.draw(game)
 
-        if game.player.lives <= 0: self.game_over(game)
+        if game.player.lives <= 0: game.game_state = 'gameover'
 
         game.clock.tick(game.FPS)
 
-    def draw(self, game, stopped=False):
+    def draw(self, game):
         # Drawing everything
         game.screen.fill(self.bg_color)
 
-        bg.update_terrain(game, game.level, stopped)
+        bg.update_terrain(game, game.level)
 
         game.all_sprites.draw(game.screen)
         for enemy in self.enemy_list:
@@ -264,7 +283,7 @@ class Level:
         game.right_hand.draw(game.screen)
 
         if game.level.stage < 2:
-            game.player.draw(game, stopped)
+            game.player.draw(game)
 
         # Setting user interface
         distance_text = game.large_font.render(f'{game.player.distance} m', True, game.COLORS.white)
@@ -289,7 +308,8 @@ class Level:
 
     def game_over(self, game):
         # Game Over
-        self.draw(game, True)
+        self.draw(game)
+        game.paused = True
 
         game_over_text = game.text_font.render('GAME OVER', True, game.COLORS.red)
         final_score_text = game.text_font.render(f'Final Score: {game.player.score}', True,
@@ -308,45 +328,23 @@ class Level:
                          (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 + 70))
 
 
-        # Wait for player input
-        waiting = True
-
-        while waiting and game.running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    waiting = False
-                    game.running = False
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
-                        game.game_state = 'menu'
-                        waiting = False
 
     def pause(self, game):
+        self.draw(game)
+        game.paused = True
+
         pygame.mixer.music.set_volume(0.1)
+        game.screen.blit(game.DARK_FILTER, (0, 0))
 
-        while game.game_state == 'pause' and game.running:
-            self.draw(game, True)
-            game.screen.blit(game.DARK_FILTER, (0, 0))
+        pause_text1 = game.title_font.render('PAUSED', True, game.COLORS.bright_yellow)
+        pause_text2 = game.text_font.render('> SPACE: resume game', True, game.COLORS.white)
+        pause_text3 = game.text_font.render('> ESC: back to menu', True, game.COLORS.white)
 
-            pause_text1 = game.title_font.render('PAUSED', True, game.COLORS.bright_yellow)
-            pause_text2 = game.text_font.render('> SPACE: resume game', True, game.COLORS.white)
-            pause_text3 = game.text_font.render('> ESC: back to menu', True, game.COLORS.white)
+        game.screen.blit(pause_text1,
+                         (game.SCREEN_WIDTH // 2 - 120, 100))
+        game.screen.blit(pause_text2,
+                         (game.SCREEN_WIDTH // 2 - 120, 220))
+        game.screen.blit(pause_text3,
+                         (game.SCREEN_WIDTH // 2 - 120, 260))
 
-            game.screen.blit(pause_text1,
-                             (game.SCREEN_WIDTH // 2 - 120, 100))
-            game.screen.blit(pause_text2,
-                             (game.SCREEN_WIDTH // 2 - 120, 220))
-            game.screen.blit(pause_text3,
-                             (game.SCREEN_WIDTH // 2 - 120, 260))
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    game.running = False
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
-                        game.game_state = 'level'
-                        pygame.mixer.music.set_volume(0.3)
-                    elif event.key == pygame.K_ESCAPE:
-                        game.game_state = 'menu'
-
-            pygame.display.flip()
+        pygame.display.flip()

@@ -31,6 +31,10 @@ def menu_interface(game):
         if game.level.stage == 0: lv0_color = game.COLORS.yellow
         if game.level.stage == 1: lv1_color = game.COLORS.yellow
         if game.level.stage == 2: lv2_color = game.COLORS.yellow
+    else:
+        description = game.text_font.render(f'- - - - =|  CHOOSE A LEVEL!  |',
+                                            True, game.COLORS.white)
+        game.screen.blit(description, (20, game.SCREEN_HEIGHT - 40))
 
     # Anything under here is for UI
     game.screen.blit(game.menu_ui, (0, 0))
@@ -44,6 +48,10 @@ def menu_interface(game):
     choose_text2 = game.text_font.render('> ENTER to play', True, game.COLORS.white)
     game.screen.blit(choose_text, (20, 20))
     game.screen.blit(choose_text2, (20, 60))
+
+    score_text = game.large_font.render(f' {game.player.score}', True, game.COLORS.bright_cyan)
+    game.screen.blit(score_text, (70, 470))
+    game.screen.blit(game.menu_score_image, (10, 487))
 
     lv0_text = game.header_font.render(game.LV0_NAME, True, lv0_color)
     lv1_text = game.header_font.render(game.LV1_NAME, True, lv1_color)
@@ -65,7 +73,9 @@ def run(game):
                 game.running = False
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN and not game.key_down:
+                game.key_down = True
+
                 ''' HANDLING MENU CONTROLS '''
                 if game.game_state == 'menu':
                     if event.key == pygame.K_0:
@@ -77,14 +87,23 @@ def run(game):
 
                     if event.key == pygame.K_RETURN:
                         game.game_state = 'level'
+                    elif event.key == pygame.K_ESCAPE:
+                        game.level = None
+
+                ''' HANDLING PAUSED GAME '''
+                if game.game_state == 'pause':
+                    if event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
+                        game.game_state = 'level'
+                        game.paused = False
+                        pygame.mixer.music.set_volume(0.3)
+                    elif event.key == pygame.K_ESCAPE:
+                        levels.reset_game(game)
 
                 ''' HANDLING LEVEL CONTROLS '''
                 if game.game_state == 'level':
                     if event.key == pygame.K_ESCAPE:
+                        game.paused = True
                         game.game_state = 'pause'
-
-                    if event.key == pygame.K_ESCAPE:
-                        game.paused = not game.paused
 
                     game.player.key_pressed = event.unicode
 
@@ -95,19 +114,13 @@ def run(game):
                         elif game.player.key_pressed in game.right_keys:
                             game.player.action = 'shoot_right'
 
-
-                ''' HANDLING PAUSED GAME '''
-                if game.game_state == 'pause':
-                    if event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
-                        game.game_state = 'level'
-                        pygame.mixer.music.set_volume(0.3)
-                    elif event.key == pygame.K_ESCAPE:
-                        levels.reset_game(game)
-
                 ''' HANDLING GAME OVER SCREEN '''
                 if game.game_state == 'gameover':
                     if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
                         levels.reset_game(game)
+
+            elif event.type == pygame.KEYUP:
+                game.key_down = False
 
 
         # Loading different things depending on game state

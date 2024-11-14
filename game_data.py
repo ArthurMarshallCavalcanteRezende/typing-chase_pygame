@@ -60,6 +60,8 @@ def load_game(game):
     game.floor_speed = game.BASE_FLOOR_SPEED
     game.bg_speed = game.BASE_BG_SPEED
 
+    game.key_down = False
+
     game.DARK_FILTER = pygame.Surface(
         (game.SCREEN_WIDTH, game.SCREEN_HEIGHT), pygame.SRCALPHA)
     game.DARK_FILTER.fill((0, 0, 0, 100))
@@ -146,8 +148,15 @@ def load_game(game):
     game.menu_ui = pygame.transform.scale(game.menu_ui, (game.SCREEN_WIDTH, game.SCREEN_HEIGHT))
     game.menu_ui.fill(game.COLORS.black[0], special_flags=pygame.BLEND_RGBA_MULT)
 
-    game.score_image = pygame.image.load(f"./game_assets/coins.png").convert_alpha()
+    score_path = f"./game_assets/coins.png"
+    game.score_image = pygame.image.load(score_path).convert_alpha()
     game.score_image = pygame.transform.scale(game.score_image, (40, 40))
+
+    game.menu_score_image = pygame.image.load(score_path).convert_alpha()
+    game.menu_score_image = pygame.transform.scale(game.score_image, (50, 50))
+
+    game.death_score_image = pygame.image.load(score_path).convert_alpha()
+    game.death_score_image = pygame.transform.scale(game.score_image, (35, 35))
 
     # Sounds
     game.destroy_sound = pygame.mixer.Sound('./game_assets/sfx/explosion.wav')

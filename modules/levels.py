@@ -12,12 +12,13 @@ def load_random_word(file_path):
     with open(file_path, 'r') as file:
         reader = csv.reader(file)
         words = [row[0] for row in reader]
-    return random.choice(words)
+    return random.choice(words).lower()
 
 
 def reset_game(game):
     """RESET ALL GAME VARIABLES FOR RESTART OR NEW LEVEL"""
     game.sound.play('menu', -1)
+    game.player.score += game.player.run_score
 
     game.player.lives = 3
     game.player.combo = 0
@@ -25,11 +26,12 @@ def reset_game(game):
     game.player.difficulty = 1
     game.player.speed = 3
     game.player.distance = 0
+    game.player.run_score = 0
 
     game.enemy_speed = 2
     game.spawn_interval = 2000
 
-    game.all_sprites.empty()
+    game.level = Level(game, game.level.stage)
     game.game_state = 'menu'
     game.paused = False
 
@@ -202,19 +204,30 @@ class Level:
             self.started = True
 
         current_time = pygame.time.get_ticks()
+        enemy_hit = False
 
         for enemy in self.enemy_list:
             enemy.update(game)
 
-            if game.player.key_pressed == enemy.remaining_text[-1]:
-                enemy.remaining_text = enemy.remaining_text[:-1]
+            if game.player.key_pressed == enemy.remaining_text[0]:
+                enemy.remaining_text = enemy.remaining_text[1:]
 
                 if not enemy.remaining_text:
                     if game.player.closest_enemy:
                         self.enemy_list.remove(enemy)
+                        enemy_hit = True
+
+                        game.player.combo += 1
+                        if game.player.combo > game.player.max_combo:
+                            game.player.max_combo += 1
 
                         to_gain = len(enemy.target_text) * 10 * game.player.max_combo
-                        game.player.score += to_gain * self.stage
+                        game.player.run_score += to_gain * self.stage
+
+
+        if enemy_hit:
+            game.destroy_sound.play()
+            game.points_sound.play()
 
         game.player.on_input(game)
 
@@ -265,7 +278,9 @@ class Level:
 
         self.draw(game)
 
-        if game.player.lives <= 0: game.game_state = 'gameover'
+        if game.player.lives <= 0:
+            game.game_state = 'gameover'
+            game.paused = True
 
         game.clock.tick(game.FPS)
 
@@ -287,15 +302,16 @@ class Level:
 
         # Setting user interface
         distance_text = game.large_font.render(f'{game.player.distance} m', True, game.COLORS.white)
-        score_text = game.header_font.render(f' {game.player.score}', True, game.COLORS.white)
+        score_text = game.header_font.render(f' {game.player.run_score}', True, game.COLORS.white)
         lives_text = game.text_font.render(f'Lives: {game.player.lives}', True, game.COLORS.white)
         combo_text = game.text_font.render(f'Combo: {game.player.combo}', True, game.COLORS.white)
 
         # Actual word indicator
         if game.level.stage > 0:
             game.screen.blit(distance_text, (10, -5))
-            game.screen.blit(score_text, (50, 70))
-            game.screen.blit(game.score_image, (5, 80))
+
+        game.screen.blit(score_text, (50, 70))
+        game.screen.blit(game.score_image, (5, 80))
         game.screen.blit(lives_text, (10, game.SCREEN_HEIGHT - 80))
         game.screen.blit(combo_text, (10, game.SCREEN_HEIGHT - 50))
 
@@ -309,29 +325,36 @@ class Level:
     def game_over(self, game):
         # Game Over
         self.draw(game)
-        game.paused = True
 
-        game_over_text = game.text_font.render('GAME OVER', True, game.COLORS.red)
-        final_score_text = game.text_font.render(f'Final Score: {game.player.score}', True,
-                                            game.COLORS.white)
+        pygame.mixer.music.set_volume(0.1)
+        game.screen.blit(game.DARK_FILTER, (0, 0))
+
+        game_over_text = game.title_font.render('GAME OVER', True, game.COLORS.red)
+        distance_text = game.text_font.render(f'Distance Reached: {game.player.distance} M',
+                                                 True, game.COLORS.bright_yellow)
+        disks_text = game.text_font.render(f'Gained: {game.player.run_score}!',
+                                                 True, game.COLORS.bright_cyan)
         max_combo_text = game.text_font.render(f'Max Combo: {game.player.max_combo}', True,
                                           game.COLORS.white)
-        restart_text = game.text_font.render('Press SPACE to restart or ESC to quit',
+        menu_text = game.text_font.render('> SPACE: back to menu',
                                         True, game.COLORS.white)
-        game.screen.blit(game_over_text,
-                         (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 - 100))
-        game.screen.blit(final_score_text,
-                         (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 - 20))
-        game.screen.blit(max_combo_text,
-                         (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 + 10))
-        game.screen.blit(restart_text,
-                         (game.SCREEN_WIDTH // 2 - 100, game.SCREEN_HEIGHT // 2 + 70))
 
+        game.screen.blit(game_over_text,
+                         (game.SCREEN_WIDTH // 2 - 180, 100))
+        game.screen.blit(distance_text,
+                         (game.SCREEN_WIDTH // 2 - 120, 220))
+        game.screen.blit(game.death_score_image,
+                         (game.SCREEN_WIDTH // 2 - 120, 265))
+        game.screen.blit(disks_text,
+                         (game.SCREEN_WIDTH // 2 - 75, 260))
+        game.screen.blit(max_combo_text,
+                         (game.SCREEN_WIDTH // 2 - 120, 300))
+        game.screen.blit(menu_text,
+                         (game.SCREEN_WIDTH // 2 - 120, 400))
 
 
     def pause(self, game):
         self.draw(game)
-        game.paused = True
 
         pygame.mixer.music.set_volume(0.1)
         game.screen.blit(game.DARK_FILTER, (0, 0))

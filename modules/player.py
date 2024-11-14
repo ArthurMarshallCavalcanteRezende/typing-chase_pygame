@@ -6,7 +6,7 @@ PLR_ASSETS_PATH = './game_assets/player'
 
 # Class for creating a spritesheet for animated sprites
 class Sprite:
-    def __init__(self, player, name, path, special_list=None):
+    def __init__(self, player, name, path):
         self.name = name
         self.image_list = []
         self.image_path = PLR_ASSETS_PATH + f'/{path}'
@@ -92,10 +92,13 @@ class Player(pygame.sprite.Sprite):
         self.shooting = False
 
         self.lives = 3
-        self.score = 0
         self.combo = 0
         self.max_combo = 0
         self.speed = 3
+
+        # Game currency values
+        self.score = 0
+        self.run_score = 0
 
         self.distance = 0
         self.difficulty = 1
@@ -108,7 +111,6 @@ class Player(pygame.sprite.Sprite):
 
     def reset_anim(self):
         self.shooting = False
-        print('reset anims')
 
         for sprite in self.sprite_list:
             sprite.visible = False
@@ -163,11 +165,11 @@ class Player(pygame.sprite.Sprite):
                 self.reset_anim()
 
 
-    def draw(self, game, stopped=False):
+    def draw(self, game):
         # Drawing visible sprites and positioning them with offsets
 
         for sprite in self.sprite_list:
-            if not stopped: sprite.update()
+            if not game.paused: sprite.update()
 
             if sprite.visible:
                 sprite.draw(game)

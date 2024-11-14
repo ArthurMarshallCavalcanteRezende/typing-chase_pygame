@@ -1,13 +1,11 @@
 import pygame
 
 def update_terrain(game, level):
-    if game.paused: return
-
     min_floor = None
     min_bg = None
 
     for sprite in level.bg_sprites:
-        if level.stage > 0: sprite.update(game)
+        if level.stage > 0 and not game.paused: sprite.update(game)
         sprite.draw(game)
 
         if sprite.name == 'background':
@@ -19,7 +17,7 @@ def update_terrain(game, level):
     # Detect if there should be more background chunks created after fully appearing
     can_spawn = level.max_bg.rect.centerx <= game.SCREEN_WIDTH + level.max_bg.size[0]
 
-    if can_spawn:
+    if can_spawn and not game.paused:
         new_bg = Terrain(level, 'background')
         new_bg.rect.center = (level.max_bg.rect.centerx + new_bg.size[0], level.bg_y)
         level.bg_sprites.append(new_bg)
@@ -34,7 +32,7 @@ def update_terrain(game, level):
     if level.floor_neon: game.screen.blit(level.floor_neon, level.fn_pos)
 
     for sprite in level.floor_sprites:
-        if level.stage > 0: sprite.update(game)
+        if level.stage > 0 and not game.paused: sprite.update(game)
         sprite.draw(game)
 
         if sprite.name == 'floor':
@@ -46,7 +44,7 @@ def update_terrain(game, level):
     # Detect if there should be more floor chunks created after fully appearing
     can_spawn = level.max_floor.rect.centerx <= game.SCREEN_WIDTH + level.max_floor.size[0]
 
-    if can_spawn:
+    if can_spawn and not game.paused:
         new_floor = Terrain(level, 'floor')
         new_floor.rect.center = (level.max_floor.rect.centerx + new_floor.size[0], level.floor_y)
         level.floor_sprites.append(new_floor)

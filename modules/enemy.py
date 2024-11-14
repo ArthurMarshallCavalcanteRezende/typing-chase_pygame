@@ -1,26 +1,33 @@
 import pygame
 import random
+import math
 
 ENEMY_SIZE = 80
 ENEMY_IMG = './game_assets/enemy_sprites/minibot.png'
-TEXT_BG = './game_assets/enemy_sprites/target.png'
+TEXT_BG = './game_assets/enemy_sprites/target_warning.png'
 
 class Enemy():
     def __init__(self, game, text, speed):
         self.image = pygame.image.load(ENEMY_IMG).convert_alpha()
         self.image = pygame.transform.scale(self.image, (ENEMY_SIZE, ENEMY_SIZE))
-        self.bg = pygame.image.load(TEXT_BG).convert_alpha()
-        self.bg = pygame.transform.scale(self.bg, (ENEMY_SIZE - 20, ENEMY_SIZE - 20))
         self.rect = self.image.get_rect()
         self.rect.x = game.SCREEN_WIDTH
         self.rect.y = random.randint(80, game.SCREEN_HEIGHT // 1.8)
-        self.bg_rect = self.rect
 
-        self.bg_rect.y -= ENEMY_SIZE
         self.target_text = text
         self.remaining_text = text
 
-        self.text = game.large_font.render(f'{text}', True, game.COLORS.white)
+        bg_size_x = int(game.header_font.get_height() * math.ceil(len(self.target_text) / 2)) + 10
+        bg_sized_y = int(game.header_font.get_height() * 1.5)
+        self.bg = pygame.image.load(TEXT_BG).convert_alpha()
+        self.bg = pygame.transform.scale(self.bg, (bg_size_x, bg_sized_y))
+        self.bg_rect = self.bg.get_rect()
+        self.bg_rect.center = self.rect.center
+        self.bg_rect.y -= ENEMY_SIZE
+
+        self.text = game.header_font.render(f'{self.remaining_text}', True, game.COLORS.white)
+        self.text_rect = self.bg.get_rect()
+        self.text_rect.center = self.bg_rect.center
         self.finger_highlight = None
 
         self.speed = speed
@@ -28,7 +35,20 @@ class Enemy():
 
     def update(self, game):
         self.rect.x -= self.speed
-        self.bg_rect.x = self.rect.x
+        self.bg_rect.center = self.rect.center
+        self.bg_rect.y = self.rect.y - ENEMY_SIZE
+
+        self.text_rect.center = self.bg_rect.center
+
+        text_lengh = int(len(self.target_text) ** 1.5)
+
+        if len(self.target_text) > 1:
+            self.text_rect.centerx += game.header_font.get_height() // 2 + text_lengh
+        else:
+            self.text_rect.centerx += game.header_font.get_height() // 2
+
+        self.text_rect.y += game.header_font.get_height() // 1.75
+        self.text = game.header_font.render(f'{self.remaining_text}', True, game.COLORS.white)
 
         found_finger = None
 
@@ -39,7 +59,7 @@ class Enemy():
                     if found_finger: break
 
                     for current_key in finger[2]:
-                        if current_key == self.remaining_text[-1]:
+                        if current_key == self.remaining_text[0]:
                             found_finger = finger
                             break
 
@@ -62,5 +82,5 @@ class Enemy():
         game.screen.blit(self.image, self.rect)
 
         game.screen.blit(self.bg, self.bg_rect)
-        game.screen.blit(self.text, self.bg_rect)
+        game.screen.blit(self.text, self.text_rect)
 

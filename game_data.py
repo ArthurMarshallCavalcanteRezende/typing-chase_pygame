@@ -54,8 +54,8 @@ def load_game(game):
     game.LV1_NAME = '1 - Chapter 1'
     game.LV2_NAME = '2 - Chapter 2'
 
-    game.BASE_FLOOR_SPEED = 5
-    game.BASE_BG_SPEED = 2
+    game.BASE_FLOOR_SPEED = 3
+    game.BASE_BG_SPEED = 1
     game.BASE_FLOOR_LIGHTS_COLOR = game.COLORS.bright_cyan
     game.floor_speed = game.BASE_FLOOR_SPEED
     game.bg_speed = game.BASE_BG_SPEED
@@ -65,6 +65,10 @@ def load_game(game):
     game.DARK_FILTER = pygame.Surface(
         (game.SCREEN_WIDTH, game.SCREEN_HEIGHT), pygame.SRCALPHA)
     game.DARK_FILTER.fill((0, 0, 0, 100))
+
+    game.GAMEOVER_FILTER = pygame.Surface(
+        (game.SCREEN_WIDTH, game.SCREEN_HEIGHT), pygame.SRCALPHA)
+    game.GAMEOVER_FILTER.fill((30, 10, 0, 200))
 
     game.HAND_COLORS = {
         'left': {
@@ -156,7 +160,12 @@ def load_game(game):
     game.menu_score_image = pygame.transform.scale(game.score_image, (50, 50))
 
     game.death_score_image = pygame.image.load(score_path).convert_alpha()
-    game.death_score_image = pygame.transform.scale(game.score_image, (35, 35))
+    game.death_score_image = pygame.transform.scale(game.score_image, (60, 60))
+
+    game.bullet_train = pygame.image.load(f"./game_assets/stages/2/bullet_train.png").convert_alpha()
+    game.bullet_train_rect = game.bullet_train.get_rect()
+    game.bullet_train = pygame.transform.scale(game.bullet_train, (750, 450))
+    game.bullet_train_rect.center = (game.SCREEN_WIDTH // 3, game.SCREEN_HEIGHT // 1.5)
 
     # Sounds
     game.destroy_sound = pygame.mixer.Sound('./game_assets/sfx/explosion.wav')

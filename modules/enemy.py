@@ -2,17 +2,52 @@ import pygame
 import random
 import math
 
-ENEMY_SIZE = 80
-ENEMY_IMG = './game_assets/enemy_sprites/minibot.png'
-TEXT_BG = './game_assets/enemy_sprites/target_warning.png'
+ENEMY_FOLDER = './game_assets/enemy_sprites'
+TEXT_BG = f'{ENEMY_FOLDER}/target_warning.png'
 
-class Enemy():
+class Enemy:
     def __init__(self, game, text, speed):
-        self.image = pygame.image.load(ENEMY_IMG).convert_alpha()
-        self.image = pygame.transform.scale(self.image, (ENEMY_SIZE, ENEMY_SIZE))
+        self.is_word = False
+        self.image = None
+        self.size = 80
+        possible_enemies = []
+        y_pos = 0
+
+        if len(text) > 1: self.is_word = True
+
+        if game.level.stage == 0:
+            possible_enemies.append('target')
+            self.size = 150
+            y_pos = game.level.floor_y - int(self.size * 1.7)
+        elif game.level.stage == 1:
+            if self.is_word and game.player.difficulty >= 2:
+                possible_enemies.append('classB_robot')
+                self.size = 120
+                y_pos = game.level.floor_y - (self.size * 2)
+            else:
+                possible_enemies.append('minibot')
+                self.size = 80
+                y_pos = random.randint(80, game.SCREEN_HEIGHT // 1.8)
+        elif game.level.stage == 2:
+            y_pos = random.randint(80, game.SCREEN_HEIGHT // 1.8)
+
+            if self.is_word:
+                possible_enemies.append('classB_robot')
+                possible_enemies.append('classC_robot')
+                possible_enemies.append('classD_robot')
+            else:
+                possible_enemies.append('minibot')
+
+        self.name = random.choice(possible_enemies)
+
+        if self.name == 'classD_robot':
+            self.size = 200
+
+        self.image = pygame.image.load(f'{ENEMY_FOLDER}/{self.name}.png').convert_alpha()
+        self.image = pygame.transform.scale(self.image, (self.size, self.size))
         self.rect = self.image.get_rect()
-        self.rect.x = game.SCREEN_WIDTH
-        self.rect.y = random.randint(80, game.SCREEN_HEIGHT // 1.8)
+        self.rect.x = game.SCREEN_WIDTH + random.randint(0, 150)
+        self.rect.y = y_pos
 
         self.target_text = text
         self.remaining_text = text
@@ -23,7 +58,7 @@ class Enemy():
         self.bg = pygame.transform.scale(self.bg, (bg_size_x, bg_sized_y))
         self.bg_rect = self.bg.get_rect()
         self.bg_rect.center = self.rect.center
-        self.bg_rect.y -= ENEMY_SIZE
+        self.bg_rect.y -= 80
 
         self.text = game.header_font.render(f'{self.remaining_text}', True, game.COLORS.white)
         self.text_rect = self.bg.get_rect()
@@ -36,7 +71,7 @@ class Enemy():
     def update(self, game):
         self.rect.x -= self.speed
         self.bg_rect.center = self.rect.center
-        self.bg_rect.y = self.rect.y - ENEMY_SIZE
+        self.bg_rect.y = self.rect.y - 80
 
         self.text_rect.center = self.bg_rect.center
 

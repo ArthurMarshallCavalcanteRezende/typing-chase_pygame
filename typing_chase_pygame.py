@@ -63,7 +63,6 @@ def menu_interface(game):
 
 def run(game):
     game.running = True
-    game.player.is_running = False
     game.player.reset_anim()
     game.sound.play('menu', -1)
 

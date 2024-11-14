@@ -18,7 +18,9 @@ def load_random_word(file_path):
 def reset_game(game):
     """RESET ALL GAME VARIABLES FOR RESTART OR NEW LEVEL"""
     game.sound.play('menu', -1)
-    game.player.score += game.player.run_score
+
+    if game.game_state == 'gameover':
+        game.player.score += game.player.run_score
 
     game.player.lives = 3
     game.player.combo = 0
@@ -57,6 +59,7 @@ def level_config(game, level):
         level.name = game.LV0_NAME
         level.description = "like father, like son"
         level.difficulty_req = 200
+        level.spawn_interval = 2500
     if level.stage == 1:
         level.name = game.LV1_NAME
         level.description = "Coffee for today's task"
@@ -73,7 +76,7 @@ def level_config(game, level):
     if level.stage == 2:
         level.name = game.LV2_NAME
         level.description = "Freeze, ZH4R0V!!!"
-        level.difficulty_req = 500
+        level.difficulty_req = 2500
 
 class Level:
     def __init__(self, game, stage):
@@ -123,8 +126,12 @@ class Level:
 
         if self.stage == 0:
             self.word_list = [
-                './all_words/left.txt'
+                './all_words/left.txt',
+                './all_words/right.txt'
             ]
+            game.player.speed = 0
+            self.enemy_speed = 1
+
         elif self.stage == 1:
             self.word_list = [
                 './all_words/left.txt',
@@ -132,9 +139,9 @@ class Level:
                 './all_words/words_test.txt',
             ]
             self.word_chance = 10
-            self.spawn_max = 3
-            self.spawn_max = 3
+            self.spawn_max = 1
             self.has_words = True
+            game.player.speed = 3
         elif self.stage == 2:
             self.word_list = [
                 './all_words/left.txt',
@@ -142,9 +149,10 @@ class Level:
                 './all_words/words_test.txt',
             ]
             self.word_chance = 40
-            self.spawn_max = 4
+            self.spawn_max = 2
             self.enemy_speed = 3
             self.has_words = True
+            self.distance_per_frame = 3
             game.player.speed = 15
 
         level_config(game, self)
@@ -171,22 +179,36 @@ class Level:
 
 
     def spawn_enemy(self, game):
-        choosen_txt = ''
-        txt_size = len(self.word_list) - 1
+        spawn_count = 1
+        spawned = 0
+        new_speed = self.enemy_speed
 
-        if self.has_words:
-            if random.randint(1, 100) <= self.word_chance:
-                choosen_txt = self.word_list[2]
+        if self.stage > 0:
+            spawn_count = random.randint(0, self.spawn_max)
+            new_speed = random.randint(self.enemy_speed - 1, self.enemy_speed + 1)
+
+        for new_enemy in range(spawn_count):
+            spawned += 1 # Making sure only the first spawned is a word
+
+            if self.has_words and spawned == 1:
+                if random.randint(1, 100) <= self.word_chance:
+                    choosen_txt = self.word_list[2]
+                else:
+                    choosen_txt = self.word_list[random.randint(0, 1)]
             else:
-                choosen_txt = self.word_list[random.randint(0, txt_size)]
+                choosen_txt = self.word_list[random.randint(0, 1)]
 
-        else:
-            choosen_txt = self.word_list[random.randint(0, txt_size)]
+            new_word = load_random_word(choosen_txt)
 
-        new_word = load_random_word(choosen_txt)
-        new_enemy = enemy.Enemy(game, new_word, self.enemy_speed)
+            if len(new_word) > 1:
+                if len(new_word) <= 5:
+                    new_speed = 2
+                else:
+                    new_speed = 1
 
-        self.enemy_list.append(new_enemy)
+            new_enemy = enemy.Enemy(game, new_word, new_speed)
+
+            self.enemy_list.append(new_enemy)
 
 
     # Main function to run the game
@@ -205,25 +227,48 @@ class Level:
 
         current_time = pygame.time.get_ticks()
         enemy_hit = False
+        closest_to_plr = [None, 99999]
 
+        # Checking enemy conditions
         for enemy in self.enemy_list:
             enemy.update(game)
 
-            if game.player.key_pressed == enemy.remaining_text[0]:
+            if (game.player.key_pressed == enemy.remaining_text[0]
+                and enemy.rect.x < game.SCREEN_WIDTH):
                 enemy.remaining_text = enemy.remaining_text[1:]
 
                 if not enemy.remaining_text:
-                    if game.player.closest_enemy:
-                        self.enemy_list.remove(enemy)
-                        enemy_hit = True
+                    self.enemy_list.remove(enemy)
+                    enemy_hit = True
 
-                        game.player.combo += 1
-                        if game.player.combo > game.player.max_combo:
-                            game.player.max_combo += 1
+                    game.player.combo += 1
+                    if game.player.combo > game.player.max_combo:
+                        game.player.max_combo += 1
 
-                        to_gain = len(enemy.target_text) * 10 * game.player.max_combo
-                        game.player.run_score += to_gain * self.stage
+                    to_gain = len(enemy.target_text) * 10 * game.player.max_combo
+                    game.player.run_score += to_gain * self.stage
 
+            if enemy in self.enemy_list:
+                # If enemy is the current to the player
+                player_magnitude = enemy.rect.x - (game.SCREEN_WIDTH // 2) - 50
+                if player_magnitude < closest_to_plr[1]:
+                    closest_to_plr = [enemy, player_magnitude]
+
+                # If enemy passed the limit to damage player
+                if enemy.rect.x < 200:
+                    game.destroy_sound.play()
+                    game.damage_sound.play()
+
+                    game.player.lives -= 1
+                    game.player.combo = 0
+                    self.enemy_list.remove(enemy)
+                    game.all_sprites.remove(enemy)
+
+        game.player.key_pressed = None
+
+        # Updating the closest enemy to the player
+        if closest_to_plr[0]:
+            game.player.closest_enemy = closest_to_plr[0]
 
         if enemy_hit:
             game.destroy_sound.play()
@@ -240,38 +285,35 @@ class Level:
             # Updating all sprites
             game.all_sprites.update()
 
-        closest_to_plr = [None, 99999]
-
-        # Checking enemy conditions
-        for enemy in self.enemy_list:
-            # If enemy is the current to the player
-            player_magnitude = enemy.rect.x - (game.SCREEN_WIDTH // 2) - 50
-            if player_magnitude < closest_to_plr[1]:
-                closest_to_plr = [enemy, player_magnitude]
-
-            # If enemy passed the limit to damage player
-            if enemy.rect.x < (game.SCREEN_WIDTH // 2) - 50:
-                game.destroy_sound.play()
-                game.damage_sound.play()
-
-                game.player.lives -= 1
-                game.player.combo = 0
-                self.enemy_list.remove(enemy)
-                game.all_sprites.remove(enemy)
-
-        # Updating the closest enemy to the player
-        if closest_to_plr[0]:
-            game.player.closest_enemy = closest_to_plr[0]
-
         game.left_hand.update(game.player.closest_enemy)
         game.right_hand.update(game.player.closest_enemy)
 
         game.tick += 1
-        distance_threshold = 15 - (game.player.speed if game.player.speed < 15 else 14)
 
-        if game.tick % distance_threshold == 0:
-            if self.stage != 0:
+        # Incrementing distance every certain frames
+        if self.stage != 0:
+            distance_threshold = 10 - (game.player.speed if game.player.speed < 10 else 9)
+
+            if game.tick % distance_threshold == 0:
                 game.player.distance += self.distance_per_frame
+
+                # Increasing difficulty of the game over distances reached
+                if game.player.distance > self.difficulty_req:
+                    self.difficulty_req *= 2
+                    game.player.difficulty += 1
+
+                    if game.player.difficulty < 4:
+                        game.player.speed += 1
+                    elif 6 <= game.player.difficulty < 10:
+                        game.player.speed += 2
+
+                    if self.stage == 2: self.distance_per_frame += 1
+
+                    if game.player.difficulty == 3: self.spawn_max += 1
+                    if game.player.difficulty == 7: self.spawn_max += 1
+
+                    print(f'DIFFICULTY {game.player.difficulty} REACHED! '
+                          f'SPEED INCREASED TO {game.player.speed}')
 
         game.floor_speed = game.BASE_FLOOR_SPEED + game.player.speed
         game.bg_speed = game.BASE_BG_SPEED + (game.player.speed // 2)
@@ -297,8 +339,7 @@ class Level:
         game.left_hand.draw(game.screen)
         game.right_hand.draw(game.screen)
 
-        if game.level.stage < 2:
-            game.player.draw(game)
+        game.player.draw(game)
 
         # Setting user interface
         distance_text = game.large_font.render(f'{game.player.distance} m', True, game.COLORS.white)
@@ -307,32 +348,29 @@ class Level:
         combo_text = game.text_font.render(f'Combo: {game.player.combo}', True, game.COLORS.white)
 
         # Actual word indicator
-        if game.level.stage > 0:
+        if self.stage > 0:
             game.screen.blit(distance_text, (10, -5))
 
-        game.screen.blit(score_text, (50, 70))
-        game.screen.blit(game.score_image, (5, 80))
-        game.screen.blit(lives_text, (10, game.SCREEN_HEIGHT - 80))
-        game.screen.blit(combo_text, (10, game.SCREEN_HEIGHT - 50))
+        if not game.paused:
+            game.screen.blit(score_text, (50, 70))
+            game.screen.blit(game.score_image, (5, 80))
+            game.screen.blit(lives_text, (10, game.SCREEN_HEIGHT - 80))
+            game.screen.blit(combo_text, (10, game.SCREEN_HEIGHT - 50))
 
-        if game.level.stage == 2:
-            bullet_train = pygame.image.load(f"./game_assets/stages/2/bullet_train.png").convert_alpha()
-            bullet_train_rect = bullet_train.get_rect()
-            bullet_train = pygame.transform.scale(bullet_train, (750, 450))
-            bullet_train_rect.center = (game.SCREEN_WIDTH // 2, game.SCREEN_HEIGHT // 1.5)
-            game.screen.blit(bullet_train, bullet_train_rect)
+        if self.stage == 2:
+            game.screen.blit(game.bullet_train, game.bullet_train_rect)
 
     def game_over(self, game):
         # Game Over
         self.draw(game)
 
         pygame.mixer.music.set_volume(0.1)
-        game.screen.blit(game.DARK_FILTER, (0, 0))
+        game.screen.blit(game.GAMEOVER_FILTER, (0, 0))
 
         game_over_text = game.title_font.render('GAME OVER', True, game.COLORS.red)
-        distance_text = game.text_font.render(f'Distance Reached: {game.player.distance} M',
+        distance_text = game.header_font.render(f'Distance Reached: {game.player.distance} M',
                                                  True, game.COLORS.bright_yellow)
-        disks_text = game.text_font.render(f'Gained: {game.player.run_score}!',
+        disks_text = game.large_font.render(f'Gained: {game.player.run_score}!',
                                                  True, game.COLORS.bright_cyan)
         max_combo_text = game.text_font.render(f'Max Combo: {game.player.max_combo}', True,
                                           game.COLORS.white)
@@ -340,15 +378,15 @@ class Level:
                                         True, game.COLORS.white)
 
         game.screen.blit(game_over_text,
-                         (game.SCREEN_WIDTH // 2 - 180, 100))
+                         (game.SCREEN_WIDTH // 2 - 180, 70))
         game.screen.blit(distance_text,
-                         (game.SCREEN_WIDTH // 2 - 120, 220))
-        game.screen.blit(game.death_score_image,
-                         (game.SCREEN_WIDTH // 2 - 120, 265))
-        game.screen.blit(disks_text,
-                         (game.SCREEN_WIDTH // 2 - 75, 260))
+                         (game.SCREEN_WIDTH // 2 - 180, 180))
         game.screen.blit(max_combo_text,
-                         (game.SCREEN_WIDTH // 2 - 120, 300))
+                         (game.SCREEN_WIDTH // 2 - 100, 230))
+        game.screen.blit(game.death_score_image,
+                         (game.SCREEN_WIDTH // 2 - 180, 300))
+        game.screen.blit(disks_text,
+                         (game.SCREEN_WIDTH // 2 - 100, 290))
         game.screen.blit(menu_text,
                          (game.SCREEN_WIDTH // 2 - 120, 400))
 

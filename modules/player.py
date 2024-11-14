@@ -31,7 +31,6 @@ class Sprite:
         self.index = 0
         self.max_index = len(self.image_list) - 1
         self.tick = 0
-        self.update_interval = 8
 
         self.visible = False
 
@@ -39,10 +38,10 @@ class Sprite:
         self.current_image = self.image_list[self.index]
 
 
-    def update(self):
+    def update(self, player):
         self.tick += 1
 
-        if self.tick > self.update_interval:
+        if self.tick > player.update_interval:
             self.tick = 0
             self.index += 1
             if self.index > self.max_index: self.index = 0
@@ -88,13 +87,15 @@ class Player(pygame.sprite.Sprite):
         self.rect = pygame.Rect(0, 0, IMG_SIZE, IMG_SIZE)
         self.rect.center = position
         self.shoot_visual_cd = [0, 30, False]
-        self.is_running = True
+        self.is_running = False
         self.shooting = False
 
         self.lives = 3
         self.combo = 0
         self.max_combo = 0
         self.speed = 3
+        self.base_interval = 8
+        self.update_interval = self.base_interval
 
         # Game currency values
         self.score = 0
@@ -167,9 +168,11 @@ class Player(pygame.sprite.Sprite):
 
     def draw(self, game):
         # Drawing visible sprites and positioning them with offsets
+        self.update_interval = self.base_interval - self.difficulty
+        if self.update_interval < 3: self.update_interval = 3
 
         for sprite in self.sprite_list:
-            if not game.paused: sprite.update()
+            if not game.paused: sprite.update(self)
 
             if sprite.visible:
                 sprite.draw(game)

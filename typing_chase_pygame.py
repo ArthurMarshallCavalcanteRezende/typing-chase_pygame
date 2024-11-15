@@ -109,9 +109,9 @@ def run(game):
                     if not game.paused and game.player.lives > 0:
                         # Checking if player hit enemy and returns the action
 
-                        if game.player.key_pressed in game.left_keys:
+                        if game.player.key_pressed in game.left_letters:
                             game.player.action = 'shoot_left'
-                        elif game.player.key_pressed in game.right_keys:
+                        elif game.player.key_pressed in game.right_letters:
                             game.player.action = 'shoot_right'
 
 

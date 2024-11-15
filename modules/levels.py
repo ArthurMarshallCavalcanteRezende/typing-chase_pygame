@@ -1,18 +1,12 @@
 import pygame
-import csv
 import random
+import copy
 from modules import background as bg
 from modules import enemy
 
 pygame.mixer.init()
 
 menace_music = './game_assets/music/The Ring - Klonoa.mp3'
-
-def load_random_word(file_path):
-    with open(file_path, 'r') as file:
-        reader = csv.reader(file)
-        words = [row[0] for row in reader]
-    return random.choice(words).lower()
 
 
 def reset_game(game):
@@ -56,11 +50,21 @@ def level_config(game, level):
     level.bg_y = (level.bg_size[1] // 2)
 
     if level.stage == 0:
+        level.possible_enemies = [
+            ['target', 100],
+        ]
+
         level.name = game.LV0_NAME
         level.description = "like father, like son"
         level.difficulty_req = 200
         level.spawn_interval = 2500
     if level.stage == 1:
+        level.possible_enemies = [
+            ['normal_minibot', 60],
+            ['wild_minibot', 30],
+            ['spike_minibot', 10],
+        ]
+
         level.name = game.LV1_NAME
         level.description = "Coffee for today's task"
         level.difficulty_req = 100
@@ -74,6 +78,12 @@ def level_config(game, level):
         level.floor_neon.fill(game.COLORS.black[0])
         level.fn_pos = (0, game.SCREEN_HEIGHT - 170)
     if level.stage == 2:
+        level.possible_enemies = [
+            ['normal_minibot', 60],
+            ['wild_minibot', 30],
+            ['spike_minibot', 10],
+        ]
+
         level.name = game.LV2_NAME
         level.description = "Freeze, ZH4R0V!!!"
         level.difficulty_req = 2500
@@ -95,6 +105,7 @@ class Level:
         self.spawn_interval = 2000
         self.enemy_speed = 2
         self.distance_per_frame = 1
+        self.possible_enemies = {}
 
         self.floor_size = (250, 250)
         self.bg_size = (game.SCREEN_HEIGHT, game.SCREEN_HEIGHT)
@@ -119,39 +130,22 @@ class Level:
 
         self.started = False
         self.word_list = []
-        self.has_words = False
 
         self.spawn_max = 1
         self.word_chance = 0
 
         if self.stage == 0:
-            self.word_list = [
-                './all_words/left.txt',
-                './all_words/right.txt'
-            ]
             game.player.speed = 0
             self.enemy_speed = 1
 
         elif self.stage == 1:
-            self.word_list = [
-                './all_words/left.txt',
-                './all_words/right.txt',
-                './all_words/words_test.txt',
-            ]
             self.word_chance = 10
             self.spawn_max = 1
-            self.has_words = True
             game.player.speed = 3
         elif self.stage == 2:
-            self.word_list = [
-                './all_words/left.txt',
-                './all_words/right.txt',
-                './all_words/words_test.txt',
-            ]
             self.word_chance = 40
             self.spawn_max = 2
             self.enemy_speed = 3
-            self.has_words = True
             game.player.speed = 15
 
         level_config(game, self)
@@ -183,29 +177,27 @@ class Level:
         new_speed = self.enemy_speed
 
         if self.stage > 0:
-            spawn_count = random.randint(0, self.spawn_max)
+            spawn_count = random.randint(1, self.spawn_max)
             new_speed = random.randint(self.enemy_speed - 1, self.enemy_speed + 1)
 
         for new_enemy in range(spawn_count):
             spawned += 1 # Making sure only the first spawned is a word
 
-            if self.has_words and spawned == 1:
-                if random.randint(1, 100) <= self.word_chance:
-                    choosen_txt = self.word_list[2]
-                else:
-                    choosen_txt = self.word_list[random.randint(0, 1)]
-            else:
-                choosen_txt = self.word_list[random.randint(0, 1)]
+            # Get a random bandit to spawn depending on chance
+            spawns = []
+            chances = []
 
-            new_word = load_random_word(choosen_txt)
+            for enemy_sprite in self.possible_enemies:
+                spawns.append(enemy_sprite[0])
+                chances.append(enemy_sprite[1])
 
-            if len(new_word) > 1:
-                if len(new_word) <= 5:
-                    new_speed = 2
-                else:
-                    new_speed = 1
+            choosen_enemy = random.choices(population=spawns, weights=chances)[0]
+            enemy_values = game.enemies[choosen_enemy]
 
-            new_enemy = enemy.Enemy(game, new_word, new_speed)
+            new_enemy = enemy.Enemy(
+                game, choosen_enemy, enemy_values[0], enemy_values[1],
+                enemy_values[2], enemy_values[3])
+            new_enemy.load(game, new_speed)
 
             self.enemy_list.append(new_enemy)
 
@@ -265,7 +257,6 @@ class Level:
                     game.player.lives -= 1
                     game.player.combo = 0
                     self.enemy_list.remove(enemy)
-                    game.all_sprites.remove(enemy)
 
         if enemy_killed:
             game.destroy_sound.play()
@@ -287,9 +278,6 @@ class Level:
             if current_time - self.enemy_spawn_time > self.spawn_interval:
                 self.enemy_spawn_time = current_time
                 self.spawn_enemy(game)
-
-            # Updating all sprites
-            game.all_sprites.update()
 
         game.left_hand.update(game.player.closest_enemy)
         game.right_hand.update(game.player.closest_enemy)
@@ -338,7 +326,6 @@ class Level:
 
         bg.update_terrain(game, game.level)
 
-        game.all_sprites.draw(game.screen)
         for enemy in self.enemy_list:
             enemy.draw(game)
 

@@ -151,7 +151,6 @@ class Player(pygame.sprite.Sprite):
 
     # Handle the basics of shooting animation
     def shoot_anim(self, side):
-        self.shooting = True
         self.shoot_visual_cd[0] = 0
         self.shoot_visual_cd[2] = True
 
@@ -204,5 +203,4 @@ class Player(pygame.sprite.Sprite):
         for sprite in self.sprite_list:
             if not game.paused: sprite.update(self)
 
-            if sprite.visible:
-                sprite.draw(game)
+            sprite.draw(game)

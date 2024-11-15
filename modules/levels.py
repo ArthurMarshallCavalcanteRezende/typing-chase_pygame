@@ -152,7 +152,6 @@ class Level:
             self.spawn_max = 2
             self.enemy_speed = 3
             self.has_words = True
-            self.distance_per_frame = 3
             game.player.speed = 15
 
         level_config(game, self)
@@ -309,9 +308,9 @@ class Level:
                     self.difficulty_req *= 2
                     game.player.difficulty += 1
 
-                    if game.player.difficulty < 4:
+                    if game.player.difficulty < 5:
                         game.player.speed += 1
-                    elif 6 <= game.player.difficulty < 10:
+                    elif 5 <= game.player.difficulty < 10:
                         game.player.speed += 2
 
                     if self.stage == 2: self.distance_per_frame += 1

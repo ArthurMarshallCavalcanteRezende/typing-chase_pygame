@@ -1,7 +1,6 @@
 import pygame
 import os
 
-IMG_SIZE = 120
 PLR_ASSETS_PATH = './game_assets/player'
 
 # Class for creating a spritesheet for animated sprites
@@ -25,7 +24,7 @@ class Sprite:
         for filename in name_list:
             if filename.endswith('.png'):
                 image = pygame.image.load(self.image_path + f'/{filename}').convert_alpha()
-                image = pygame.transform.scale(image, (IMG_SIZE, IMG_SIZE))
+                image = pygame.transform.scale(image, (player.size, player.size))
 
                 self.image_list.append(image)
 
@@ -78,11 +77,11 @@ class Sprite:
         if self.visible:
             # Position on top of bullet train on level 2
             if game.level.stage == 2:
-                game.player.current_rect = game.player.train_rect
+                game.player.rect = game.player.train_rect
             else:
-                game.player.current_rect = game.player.rect
+                game.player.rect = game.player.base_rect
 
-            game.screen.blit(self.current_image, game.player.current_rect)
+            game.screen.blit(self.current_image, game.player.rect)
 
 
 class Player:
@@ -91,6 +90,7 @@ class Player:
         self.sprite_list = []
         self.running_list = []
         self.oneshot_list = []
+        self.size = 120
 
         # Left sprites put first so the game always draws them behind others
         self.run_left = Sprite(self, 'run_left', 'run/left_run')
@@ -111,17 +111,17 @@ class Player:
         self.running_list.append(self.run_right)
         self.oneshot_list.append(self.right_shoot)
 
-        self.rect = pygame.Rect(0, 0, IMG_SIZE, IMG_SIZE)
-        self.rect.center = game.player_pos
+        self.base_rect = pygame.Rect(0, 0, self.size, self.size)
+        self.base_rect.center = game.player_pos
         self.shoot_visual_cd = [0, 32, False]
         self.is_running = False
         self.train_rect = pygame.Rect(
                     0,
-                    self.rect.y - 150,
-                    IMG_SIZE, IMG_SIZE)
+                    self.base_rect.y - 150,
+                    self.size, self.size)
 
-        self.current_rect = self.rect
-        self.hitbox = pygame.Rect(0, 0, IMG_SIZE // 4, IMG_SIZE // 2)
+        self.rect = self.base_rect
+        self.hitbox = pygame.Rect(0, 0, self.size // 4, self.size // 2)
 
         self.lives = 3
         self.combo = 0
@@ -139,6 +139,29 @@ class Player:
         self.closest_enemy = None
         self.action = None
         self.key_pressed = None
+
+        self.letter_frame = game.text_frame.copy()
+        self.letter_frame = pygame.transform.scale(self.letter_frame, (140, 140))
+        self.letter_frame_rect = self.letter_frame.get_rect()
+        self.letter_frame_rect.center = (game.SCREEN_WIDTH // 2, game.SCREEN_HEIGHT - 100)
+
+        self.closest_letter = game.large_font.render('...', True, game.COLORS.white)
+        self.closest_letter_rect = self.letter_frame.get_rect()
+        self.closest_letter_rect.topleft = self.letter_frame_rect.center
+        self.closest_letter_rect.y -= 12
+        self.closest_letter_rect.x -= 12
+
+        self.dots_text = '.'
+        self.dots_interval = 15
+
+        self.dodge = False
+        self.invincible = False
+        self.dodge_period = [0, 30]
+        self.iv_frames = 0
+        self.invincibility_time = 90
+        self.iv_blink = [False, 0, 30]
+
+        self.tick = 0
 
         self.reset_anim()
 
@@ -178,6 +201,18 @@ class Player:
                 self.right_shoot.visible = True
                 self.right_shoot.shot_enabled = True
 
+    # Toggling dodge mode if not on cooldown
+    def dodge_anim(self):
+        if self.dodge:
+            for sprite in self.sprite_list:
+                sprite.visible = False
+
+            self.left_shoot.visible = True
+            self.dodge_period[0] += 1
+
+            if self.dodge_period[0] > self.dodge_period[1]:
+                self.dodge = False
+                self.reset_anim()
 
     def on_input(self, game):
         if game.player.action:
@@ -185,6 +220,10 @@ class Player:
                 self.shoot_anim('left')
             elif game.player.action == 'shoot_right':
                 self.shoot_anim('right')
+            elif game.player.action == 'dodge':
+                if not self.dodge:
+                    self.dodge = True
+                    self.dodge_period[0] = 0
 
             game.player.action = None
         else:
@@ -198,11 +237,53 @@ class Player:
 
                 self.reset_anim()
 
+    def damage(self, game):
+        if not self.invincible:
+            self.lives -= 1
+            self.invincible = True
+            self.iv_frames = 0
+
+            game.damage_sound.play()
+
     def update(self, game):
-        self.hitbox.center = self.current_rect.center
+        self.tick += 1
+        self.hitbox.center = self.rect.center
+        self.dodge_anim()
+
+        if self.invincible:
+            self.iv_frames += 1
+            self.iv_blink[1] += 1
+
+            if self.iv_frames > self.invincibility_time // 2:
+                self.iv_blink[2] = 4
+            else:
+                self.iv_blink[2] = 8
+
+            if self.iv_blink[1] > self.iv_blink[2]:
+                self.iv_blink[1] = 0
+                self.iv_blink[0] = not self.iv_blink[0]
+
+            if self.iv_frames >= self.invincibility_time:
+                self.invincible = False
+        else:
+            self.iv_blink[0] = False
+
+        if self.closest_enemy and len(self.closest_enemy.remaining_text) > 0:
+            new_color = game.COLORS.white
+            if self.closest_enemy.name == 'fake_minibot':
+                new_color = game.COLORS.red
+
+            first_letter = self.closest_enemy.remaining_text[0]
+            self.closest_letter = game.large_font.render(first_letter, True, new_color)
+        else:
+            if self.tick % self.dots_interval == 0:
+                self.dots_text += '.'
+                if len(self.dots_text) > 3: self.dots_text = '.'
+            self.closest_letter = game.large_font.render(self.dots_text, True, game.COLORS.white)
 
         if game.level.stage == 2:
-            self.train_rect.x = game.bullet_train_rect.centerx - 120
+            self.train_rect.x = game.bullet_train_rect.centerx - self.size
+            self.train_rect.y = game.bullet_train_rect.y + self.size // 2.2
 
     def draw(self, game):
         # Drawing visible sprites and positioning them with offsets
@@ -210,6 +291,11 @@ class Player:
         if self.update_interval < 3: self.update_interval = 3
 
         for sprite in self.sprite_list:
-            if not game.paused: sprite.update(self)
+            if not game.paused:
+                sprite.update(self)
 
-            sprite.draw(game)
+            if not self.iv_blink[0]:
+                sprite.draw(game)
+
+        game.screen.blit(self.letter_frame, self.letter_frame_rect)
+        game.screen.blit(self.closest_letter, self.closest_letter_rect)

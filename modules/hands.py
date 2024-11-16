@@ -1,6 +1,6 @@
 import pygame
 
-HAND_SIZE = 150
+HAND_SIZE = 120
 
 def create_finger(hand, name, path, color):
     image = pygame.image.load(path + f'/{name}.png').convert_alpha()
@@ -13,15 +13,13 @@ def create_finger(hand, name, path, color):
         'image': image,
         'color': color[name],
         'pressed': False,
-        'show_color': False,
     }
 
     hand.finger_list.append(finger)
     return finger
 
-class Hands(pygame.sprite.Sprite):
+class Hands():
     def __init__(self, image_path, position, colors):
-        super().__init__()
         self.side = ''
         self.hand_sprite = pygame.image.load(image_path + '/hand.png').convert_alpha()
         self.hand_sprite = pygame.transform.scale(self.hand_sprite, (HAND_SIZE, HAND_SIZE))
@@ -36,20 +34,24 @@ class Hands(pygame.sprite.Sprite):
         self.hand_middle = create_finger(self, 'middle',image_path, colors)
         self.hand_ring = create_finger(self, 'ring',image_path, colors)
         self.hand_pinkie = create_finger(self, 'pinkie',image_path, colors)
+        self.highlighted = None
 
         self.rect = self.hand_base.get_rect()
         self.rect.center = position
 
-    def update(self, enemy):
-        if not enemy or not enemy.finger_highlight:
+    def update(self, game):
+        closest = game.player.closest_enemy
+
+        if (not closest or not closest.finger_highlight or
+                not closest in game.level.enemy_list):
+            self.highlighted = None
+
             return
 
         for finger in self.finger_list:
-            if enemy and (finger['name'] == enemy.finger_highlight[1]
-                and self.side == enemy.finger_highlight[0]):
-                finger['show_color'] = True
-            else:
-                finger['show_color'] = False
+            if closest and (finger['name'] == closest.finger_highlight[1]
+                and self.side == closest.finger_highlight[0]):
+                self.highlighted = finger
 
 
 
@@ -59,6 +61,5 @@ class Hands(pygame.sprite.Sprite):
         screen.blit(self.hand_base, self.rect)
 
         # Desenhar cor de cada dedo se tiver
-        for finger in self.finger_list:
-            if finger['show_color']:
-                screen.blit(finger['image'], self.rect)
+        if self.highlighted:
+            screen.blit(self.highlighted['image'], self.rect)

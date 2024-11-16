@@ -5,6 +5,16 @@ from modules import levels
 pygame.init()
 pygame.display.set_caption("Typing Chase - Beta edition - 2024-11-11")
 
+DODGE_KEYTABLE = [
+    pygame.K_LSHIFT, pygame.K_RSHIFT, pygame.KMOD_LSHIFT, pygame.KMOD_RSHIFT,
+    pygame.KSCAN_LSHIFT, pygame.KSCAN_RSHIFT,
+
+    pygame.K_LCTRL, pygame.K_RCTRL, pygame.KMOD_LCTRL, pygame.KMOD_RCTRL,
+    pygame.KSCAN_LCTRL, pygame.KSCAN_RCTRL,
+
+    pygame.K_SPACE, pygame.KSCAN_SPACE
+]
+
 def menu_interface(game):
     game.screen.fill(game.COLORS.dark_orange)
 
@@ -114,6 +124,9 @@ def run(game):
                         elif game.player.key_pressed in game.right_letters:
                             game.player.action = 'shoot_right'
 
+                        if event.key in DODGE_KEYTABLE:
+                            game.player.action = 'dodge'
+
 
                 ''' HANDLING GAME OVER SCREEN '''
                 if game.game_state == 'gameover':
@@ -121,6 +134,8 @@ def run(game):
                         levels.reset_game(game)
 
             elif event.type == pygame.KEYUP:
+                game.key_down = False
+            elif game.game_state == 'menu' and game.key_down:
                 game.key_down = False
 
 

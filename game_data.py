@@ -38,6 +38,7 @@ class colors:
 
 
 ENEMY_FOLDER = './game_assets/enemy_sprites'
+OBSTACLE_FOLDER = './game_assets/obstacle_sprites'
 
 def update_loading(game, loaded=False):
     game.loading_percent += random.randint(7, 15)
@@ -157,6 +158,13 @@ def load_game(game):
     game.wild_minibot_sprite = load_animation(game, ENEMY_FOLDER + '/wild_minibot', 80)
     game.spike_minibot_sprite = load_animation(game, ENEMY_FOLDER + '/spike_minibot', 80)
 
+    game.hivebox_sprite = load_animation(game, ENEMY_FOLDER + '/hivebox', 160)
+    game.mototaxi_sprite = load_animation(game, ENEMY_FOLDER + '/mototaxi', 160)
+
+    # Obstacle sprites
+    game.missile_sprite = load_animation(game, OBSTACLE_FOLDER + '/missile', 80)
+    game.barrier_sprite = load_animation(game, OBSTACLE_FOLDER + '/barrier', 150)
+
     game.enemies = {
         # Index meaning: 1 = sprite, 2 = size, 3 = difficulty, 4 = has_frame
         'target': [game.target_sprite, 150, 1, True],
@@ -164,6 +172,14 @@ def load_game(game):
         'normal_minibot': [game.normal_minibot_sprite, 80, 1, False],
         'wild_minibot': [game.wild_minibot_sprite, 80, 1, False],
         'spike_minibot': [game.spike_minibot_sprite, 80, 1, False],
+
+        'hivebox': [game.hivebox_sprite, 80, 2, True],
+        'mototaxi': [game.mototaxi_sprite, 80, 2, True],
+    }
+
+    game.obstacles = {
+        'missile': [game.missile_sprite, 80, 0, False],
+        'barrier': [game.barrier_sprite, 80, 0, False],
     }
 
     update_loading(game)
@@ -237,9 +253,13 @@ def load_game(game):
     game.death_score_image = pygame.image.load(score_path).convert_alpha()
     game.death_score_image = pygame.transform.scale(game.score_image, (60, 60))
 
+    game.evil_face = pygame.image.load(f"./game_assets/evil_face.png").convert_alpha()
+    game.evil_face = pygame.transform.scale(game.evil_face, (45, 45))
+
     game.bullet_train = pygame.image.load(f"./game_assets/stages/2/bullet_train.png").convert_alpha()
     game.bullet_train_rect = game.bullet_train.get_rect()
-    game.bullet_train = pygame.transform.scale(game.bullet_train, (750, 450))
+    game.bullet_train_size = (750, 450)
+    game.bullet_train = pygame.transform.scale(game.bullet_train, game.bullet_train_size)
     game.bullet_train_rect.center = (-10, game.SCREEN_HEIGHT // 1.5)
     game.bullet_train_speed = 5
     update_loading(game)
@@ -259,6 +279,8 @@ def load_game(game):
     game.get_life_sound.set_volume(0.5)
     game.shoot_sound = pygame.mixer.Sound('./game_assets/sfx/shoot.wav')
     game.shoot_sound.set_volume(0.3)
+    game.caution_sound = pygame.mixer.Sound('./game_assets/sfx/caution.wav')
+    game.caution_sound.set_volume(0.4)
     update_loading(game)
 
     # ZH4R0V Dubs

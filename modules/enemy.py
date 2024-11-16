@@ -66,6 +66,7 @@ class Enemy:
     def __init__(self, game, name, sprite_list, size, difficulty, has_frame=False):
         self.loaded = False
         self.is_word = False
+        self.reached_player = False
         self.has_frame = has_frame
         self.size = size
         self.difficulty = difficulty
@@ -135,9 +136,11 @@ class Enemy:
         bg_sized_y = int(game.header_font.get_height() * 1.5)
         self.bg = pygame.transform.scale(self.bg, (bg_size_x, bg_sized_y))
         self.bg_rect = self.bg.get_rect()
+        self.bg_rect.x = game.SCREEN_WIDTH + 200
 
         self.text = game.header_font.render(f'{self.remaining_text}', True, game.COLORS.white)
         self.text_rect = self.bg.get_rect()
+        self.text_rect.center = self.rect.center
 
         self.loaded = True
 
@@ -146,7 +149,34 @@ class Enemy:
         if not self.loaded: return
 
         self.sprite.update(self)
-        self.rect.x -= self.speed
+
+        if not self.reached_player:
+            self.rect.x -= self.speed
+        else:
+            # Moving to the player if reached far enough
+            direction_x = game.player.current_rect.x - self.rect.x
+            direction_y = game.player.current_rect.y - self.rect.y
+            distance = (direction_x ** 2 + direction_y ** 2) ** 0.5
+
+            self.rect.x += self.speed * (direction_x / distance)
+            self.rect.y += self.speed * (direction_y / distance)
+
+        # Remove if offscreen
+        if self.rect.x < -100:
+            game.level.enemy_list.remove(self)
+
+        # Damage player when colliding
+        if self.rect.colliderect(game.player.hitbox) and self in game.level.enemy_list:
+            if game.level.stage != 0:
+                game.player.lives -= 1
+                game.damage_sound.play()
+                game.destroy_sound.play()
+            else:
+                game.wrong_sound.play()
+
+            game.player.combo = 0
+            game.level.enemy_list.remove(self)
+
         self.bg_rect.center = self.rect.center
         self.bg_rect.y = self.rect.y - 80
 

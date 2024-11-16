@@ -103,6 +103,7 @@ class Level:
         self.difficulty_req = 100
         self.enemy_spawn_time = 0
         self.spawn_interval = 2000
+        self.max_enemy_distance = 200
         self.enemy_speed = 2
         self.distance_per_frame = 1
         self.possible_enemies = {}
@@ -134,19 +135,24 @@ class Level:
         self.spawn_max = 1
         self.word_chance = 0
 
+        game.bullet_train_rect.centerx = -10
+        game.bullet_train_speed = 5
+
         if self.stage == 0:
             game.player.speed = 0
             self.enemy_speed = 1
-
+            self.max_enemy_distance = -200
         elif self.stage == 1:
             self.word_chance = 10
             self.spawn_max = 1
             game.player.speed = 3
+            self.max_enemy_distance = 200
         elif self.stage == 2:
             self.word_chance = 40
             self.spawn_max = 2
             self.enemy_speed = 3
             game.player.speed = 15
+            self.max_enemy_distance = 350
 
         level_config(game, self)
 
@@ -250,13 +256,8 @@ class Level:
                     closest_to_plr = [enemy, player_magnitude]
 
                 # If enemy passed the limit to damage player
-                if enemy.rect.x < 200:
-                    game.destroy_sound.play()
-                    game.damage_sound.play()
-
-                    game.player.lives -= 1
-                    game.player.combo = 0
-                    self.enemy_list.remove(enemy)
+                if enemy.rect.x < self.max_enemy_distance:
+                    enemy.reached_player = True
 
         if enemy_killed:
             game.destroy_sound.play()
@@ -281,8 +282,15 @@ class Level:
 
         game.left_hand.update(game.player.closest_enemy)
         game.right_hand.update(game.player.closest_enemy)
+        game.player.update(game)
 
         game.tick += 1
+
+        if game.bullet_train_rect.centerx < 200:
+            game.bullet_train_rect.centerx += game.bullet_train_speed
+
+            # Slowly decreasing intro speed for bullet train
+            game.bullet_train_speed *= 0.98
 
         # Incrementing distance every certain frames
         if self.stage != 0:
@@ -326,6 +334,9 @@ class Level:
 
         bg.update_terrain(game, game.level)
 
+        if self.stage == 2:
+            game.screen.blit(game.bullet_train, game.bullet_train_rect)
+
         for enemy in self.enemy_list:
             enemy.draw(game)
 
@@ -349,9 +360,6 @@ class Level:
             game.screen.blit(game.score_image, (5, 80))
             game.screen.blit(lives_text, (10, game.SCREEN_HEIGHT - 80))
             game.screen.blit(combo_text, (10, game.SCREEN_HEIGHT - 50))
-
-        if self.stage == 2:
-            game.screen.blit(game.bullet_train, game.bullet_train_rect)
 
     def game_over(self, game):
         # Game Over

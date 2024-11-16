@@ -76,20 +76,17 @@ class Sprite:
 
     def draw(self, game):
         if self.visible:
-            new_rect = game.player.rect
-
             # Position on top of bullet train on level 2
             if game.level.stage == 2:
-                new_rect = pygame.Rect(
-                    game.player.rect.x + 50,
-                    game.player.rect.y - 150,
-                    IMG_SIZE, IMG_SIZE)
+                game.player.current_rect = game.player.train_rect
+            else:
+                game.player.current_rect = game.player.rect
 
-            game.screen.blit(self.current_image, new_rect)
+            game.screen.blit(self.current_image, game.player.current_rect)
 
 
-class Player(pygame.sprite.Sprite):
-    def __init__(self, position):
+class Player:
+    def __init__(self, game):
         super().__init__()
         self.sprite_list = []
         self.running_list = []
@@ -115,9 +112,16 @@ class Player(pygame.sprite.Sprite):
         self.oneshot_list.append(self.right_shoot)
 
         self.rect = pygame.Rect(0, 0, IMG_SIZE, IMG_SIZE)
-        self.rect.center = position
+        self.rect.center = game.player_pos
         self.shoot_visual_cd = [0, 32, False]
         self.is_running = False
+        self.train_rect = pygame.Rect(
+                    0,
+                    self.rect.y - 150,
+                    IMG_SIZE, IMG_SIZE)
+
+        self.current_rect = self.rect
+        self.hitbox = pygame.Rect(0, 0, IMG_SIZE // 4, IMG_SIZE // 2)
 
         self.lives = 3
         self.combo = 0
@@ -194,6 +198,11 @@ class Player(pygame.sprite.Sprite):
 
                 self.reset_anim()
 
+    def update(self, game):
+        self.hitbox.center = self.current_rect.center
+
+        if game.level.stage == 2:
+            self.train_rect.x = game.bullet_train_rect.centerx - 120
 
     def draw(self, game):
         # Drawing visible sprites and positioning them with offsets

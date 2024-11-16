@@ -205,7 +205,7 @@ def load_game(game):
     game.player_pos = ((game.SCREEN_WIDTH // 3) - 100,
                     game.SCREEN_HEIGHT - 235)
 
-    game.player = plr.Player(game.player_pos)
+    game.player = plr.Player(game)
     update_loading(game)
 
     # Hands Sprites
@@ -240,7 +240,8 @@ def load_game(game):
     game.bullet_train = pygame.image.load(f"./game_assets/stages/2/bullet_train.png").convert_alpha()
     game.bullet_train_rect = game.bullet_train.get_rect()
     game.bullet_train = pygame.transform.scale(game.bullet_train, (750, 450))
-    game.bullet_train_rect.center = (game.SCREEN_WIDTH // 3, game.SCREEN_HEIGHT // 1.5)
+    game.bullet_train_rect.center = (-10, game.SCREEN_HEIGHT // 1.5)
+    game.bullet_train_speed = 5
     update_loading(game)
 
     # Sounds

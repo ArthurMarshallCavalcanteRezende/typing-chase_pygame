@@ -104,7 +104,7 @@ class Obstacle:
             self.speed = 3
             self.rect.x = game.SCREEN_WIDTH + self.size
             self.rect.y = game.player.rect.centery - (self.size // 1.5)
-            self.base_y = self.rect.y
+
             self.distance_warn = 100
 
             self.text_frame_rect.x = self.rect.x - self.size // 2.2
@@ -116,6 +116,7 @@ class Obstacle:
 
         self.can_hit = True
         self.alarm_on = True
+        self.base_y = self.rect.y
 
 
     def update(self, game):

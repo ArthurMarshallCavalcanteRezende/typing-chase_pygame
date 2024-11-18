@@ -48,6 +48,7 @@ DATA_FORMAT = {
     },
     "level2": {
         "unlocked": False,
+        "cutscene_finished": False,
         "max_distance": 0,
         "max_cash": 0,
         "max_combo": 0,
@@ -92,12 +93,12 @@ def save_datastore(game):
 def update_missing_keys(data, template):
     # Recursively update missing keys based on the template
     if not isinstance(data, dict):
-        print("Invalid data format. Resetting to default.")
+        print("> Invalid data format. Resetting to default.")
         return template.copy()
 
     for key, value in template.items():
         if key not in data:
-            print(f"Adding missing key: {key}")
+            print(f"> Adding missing key: {key}")
             data[key] = value
         elif isinstance(value, dict):
             # Recursively check nested dictionaries
@@ -110,7 +111,7 @@ def load_datastore(game):
 
     # Check if filepath doesn't exist and create new file
     if not os.path.exists(file_path):
-        print(f'{game.player_name} is not part of "{DATA_FILENAME}", new data file will be created.')
+        print(f'> {game.player_name} is not part of "{DATA_FILENAME}", new data file will be created.')
         save_datastore(game)
 
 
@@ -162,6 +163,11 @@ def load_animation(game, path, size):
     return image_list
 
 
+def load_text(txt_name):
+    with open(f'text_files/{txt_name}.txt', 'r') as file:
+        reader = csv.reader(file)
+        return [row[0] for row in reader]
+
 def load_game(game):
     game.data = {}
 
@@ -170,6 +176,11 @@ def load_game(game):
     game.account_names = []
     game.account_string = ''
     game.account_check_index = 0
+
+    game.cutscene_skipped = False
+    game.play_cutscene = False
+
+    game.level_index = -1
 
     for file in ACCOUNT_FILES:
         name = file[:-5]
@@ -187,6 +198,7 @@ def load_game(game):
     game.sound = sound.Sound('./game_assets/music/', 'mp3')
     game.player_name = ''
     game.input_blink = False
+    game.dodge_color = game.COLORS.red
 
     game.eligible_names = [
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
@@ -215,9 +227,11 @@ def load_game(game):
     game.clock = pygame.time.Clock()
     game.running = True
     game.paused = False
-    game.game_state = 'player_select'
+    game.state = 'player_select'
     game.level = None
+    game.on_select = False
 
+    game.TUTORIAL_CASH = 500
     game.LV0_NAME = '0 - TUTORIAL'
     game.LV1_NAME = '1 - Chapter 1'
     game.LV2_NAME = '2 - Chapter 2'
@@ -225,7 +239,7 @@ def load_game(game):
     game.LV_COSTS = {
         'level0': 0,
         'level1': 200,
-        'level2': 10000,
+        'level2': 5000,
     }
 
     game.BASE_FLOOR_SPEED = 3
@@ -240,6 +254,22 @@ def load_game(game):
     update_loading(game)
 
     # Screen filters
+    game.TUTORIAL_FILTER = pygame.Surface(
+        (game.SCREEN_WIDTH, game.SCREEN_HEIGHT), pygame.SRCALPHA)
+    game.TUTORIAL_FILTER.fill((5, 10, 30, 200))
+
+    game.CUTSCENE_FILTER = pygame.Surface(
+        (game.SCREEN_WIDTH, game.SCREEN_HEIGHT), pygame.SRCALPHA)
+    game.CUTSCENE_FILTER.fill((255, 255, 255, 180))
+
+    game.LV0_FILTER = pygame.Surface(
+        (game.SCREEN_WIDTH, game.SCREEN_HEIGHT), pygame.SRCALPHA)
+    game.LV0_FILTER.fill((255, 180, 0, 40))
+
+    game.LV1_FILTER = pygame.Surface(
+        (game.SCREEN_WIDTH, game.SCREEN_HEIGHT), pygame.SRCALPHA)
+    game.LV1_FILTER.fill((0, 0, 0, 70))
+
     game.DARK_FILTER = pygame.Surface(
         (game.SCREEN_WIDTH, game.SCREEN_HEIGHT), pygame.SRCALPHA)
     game.DARK_FILTER.fill((0, 0, 0, 100))
@@ -291,11 +321,16 @@ def load_game(game):
     game.hivebox_sprite = load_animation(game, ENEMY_FOLDER + '/hivebox', 160)
     game.mototaxi_sprite = load_animation(game, ENEMY_FOLDER + '/mototaxi', 160)
 
+    game.classB_sprite = load_animation(game, ENEMY_FOLDER + '/classB', 120)
+    game.classC_sprite = load_animation(game, ENEMY_FOLDER + '/classC', 120)
+    game.classD_sprite = load_animation(game, ENEMY_FOLDER + '/classD', 160)
+
     update_loading(game)
 
     # Obstacle sprites
     game.missile_sprite = load_animation(game, OBSTACLE_FOLDER + '/missile', 80)
     game.barrier_sprite = load_animation(game, OBSTACLE_FOLDER + '/barrier', 150)
+    game.tumbleweed_sprite = load_animation(game, OBSTACLE_FOLDER + '/tumbleweed', 80)
 
     game.enemies = {
         # Index meaning: 1 = sprite, 2 = size, 3 = difficulty, 4 = has_frame
@@ -307,11 +342,16 @@ def load_game(game):
 
         'hivebox': [game.hivebox_sprite, 80, 2, True],
         'mototaxi': [game.mototaxi_sprite, 80, 2, True],
+
+        'classB': [game.classB_sprite, 120, 2, True],
+        'classC': [game.classC_sprite, 120, 3, True],
+        'classD': [game.classD_sprite, 160, 5, True],
     }
 
     game.obstacles = {
         'missile': [game.missile_sprite, 80, 0, False],
         'barrier': [game.barrier_sprite, 80, 0, False],
+        'tumbleweed': [game.tumbleweed_sprite, 80, 0, False],
     }
 
     update_loading(game)
@@ -334,18 +374,18 @@ def load_game(game):
         ]
     ]
 
-    # Left and right keys list by rows
-    with open('text_files/left_letters.txt', 'r') as file:
-        reader = csv.reader(file)
-        game.left_letters = [row[0] for row in reader]
+    # Lists of letters and words from txt files
+    game.left_letters = load_text('left_letters')
+    game.right_letters = load_text('right_letters')
+    game.all_words = load_text('all_words')
 
-    with open('text_files/right_letters.txt', 'r') as file:
-        reader = csv.reader(file)
-        game.right_letters = [row[0] for row in reader]
-
-    with open('text_files/all_words.txt', 'r') as file:
-        reader = csv.reader(file)
-        game.all_words = [row[0] for row in reader]
+    game.words_2 = load_text('words_2')
+    game.words_3 = load_text('words_3')
+    game.words_4 = load_text('words_4')
+    game.words_5 = load_text('words_5')
+    game.words_6 = load_text('words_6')
+    game.words_7 = load_text('words_7')
+    game.words_8 = load_text('words_8')
 
     update_loading(game)
 
@@ -391,6 +431,9 @@ def load_game(game):
     game.evil_face = pygame.image.load(f"./game_assets/evil_face.png").convert_alpha()
     game.evil_face = pygame.transform.scale(game.evil_face, (45, 45))
 
+    game.stage2_bg = pygame.image.load(f"./game_assets/stages/2/bg1.png").convert_alpha()
+    game.stage2_floor = pygame.image.load(f"./game_assets/stages/2/floor.png").convert_alpha()
+
     game.bullet_train = pygame.image.load(f"./game_assets/stages/2/bullet_train.png").convert_alpha()
     game.bullet_train_rect = game.bullet_train.get_rect()
     game.bullet_train_size = (750, 450)
@@ -400,14 +443,14 @@ def load_game(game):
     update_loading(game)
 
     # ZH4R0V Dubs
-    game.zharov_speech1 = pygame.mixer.Sound('./game_assets/stages/2/zharov_speech1.mp3')
-    game.zharov_speech1.set_volume(0.8)
-    game.zharov_speech2 = pygame.mixer.Sound('./game_assets/stages/2/zharov_speech2.mp3')
-    game.zharov_speech2.set_volume(0.8)
-    game.zharov_power = pygame.mixer.Sound('./game_assets/stages/2/zharov_power.mp3')
-    game.zharov_power.set_volume(0.8)
-    game.zharov_speech3 = pygame.mixer.Sound('./game_assets/stages/2/zharov_speech3.mp3')
-    game.zharov_speech3.set_volume(0.8)
+    game.zharov_speech1 = pygame.mixer.Sound('./game_assets/stages/2/zharov_speech1.wav')
+    game.zharov_speech1.set_volume(1.0)
+    game.zharov_speech2 = pygame.mixer.Sound('./game_assets/stages/2/zharov_speech2.wav')
+    game.zharov_speech2.set_volume(1.0)
+    game.zharov_power = pygame.mixer.Sound('./game_assets/stages/2/zharov_power.wav')
+    game.zharov_power.set_volume(1.0)
+    game.zharov_speech3 = pygame.mixer.Sound('./game_assets/stages/2/zharov_speech3.wav')
+    game.zharov_speech3.set_volume(1.0)
     update_loading(game)
 
     game.loaded = True

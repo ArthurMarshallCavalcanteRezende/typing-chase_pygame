@@ -77,7 +77,10 @@ class Sprite:
         if self.visible:
             # Position on top of bullet train on level 2
             if game.level.stage == 2:
-                game.player.rect = game.player.train_rect
+                if game.cutscene_skipped:
+                    game.player.rect = game.player.train_rect
+                else:
+                    game.player.rect.center = (-200, 0)
             else:
                 game.player.rect = game.player.base_rect
 
@@ -102,6 +105,8 @@ class Player:
         # Main body sprites
         self.idle = Sprite(self, 'idle', 'idle')
         self.run_body = Sprite(self, 'run_body', 'run/body')
+        self.dodge_idle = Sprite(self, 'dodge_idle', 'dodge/idle')
+        self.dodge_run = Sprite(self, 'dodge_run', 'dodge/run')
 
         # Right sprites put last so the game always draws them on top of others
         self.run_right = Sprite(self, 'run_right', 'run/right_run')
@@ -160,6 +165,7 @@ class Player:
         self.invincibility_time = 90
         self.iv_blink = [False, 0, 30]
 
+        self.dodge_warned = False
         self.tick = 0
 
         self.reset_anim()
@@ -206,7 +212,11 @@ class Player:
             for sprite in self.sprite_list:
                 sprite.visible = False
 
-            self.left_shoot.visible = True
+            if self.is_running:
+                self.dodge_run.visible = True
+            else:
+                self.dodge_idle.visible = True
+
             self.dodge_period[0] += 1
 
             if self.dodge_period[0] > self.dodge_period[1]:

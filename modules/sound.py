@@ -58,13 +58,15 @@ class Sound:
         self.explode = SFX(self, 'explode', 0.3)
         self.shoot = SFX(self, 'shoot', 0.3)
         self.caution = SFX(self, 'caution', 0.4)
-        self.bomb_alarm = SFX(self, 'bomb_alarm', 0.5)
-        self.rocket = SFX(self, 'rocket', 0.3, 1000, 1000)
+        self.bomb_alarm = SFX(self, 'bomb_alarm', 0.4)
         self.trigger = SFX(self, 'trigger', 0.3)
 
         self.metal_hit = SFX(self, 'metal_hit', 0.5)
         self.damage = SFX(self, 'damage', 0.7)
         self.dodge = SFX(self, 'dodge', 0.5)
+
+        self.rocket = SFX(self, 'rocket', 0.25, 1000, 1000)
+        self.tumbleweed = SFX(self, 'tumbleweed', 0.3, 1000, 1000)
 
         # Player SFX
         self.coin = SFX(self, 'coin', 0.5)

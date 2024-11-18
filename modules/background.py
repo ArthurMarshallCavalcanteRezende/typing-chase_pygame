@@ -27,6 +27,9 @@ def update_terrain(game, level):
     if min_bg.rect.x < 0 - min_bg.size[0]:
         level.bg_sprites.remove(min_bg)
 
+    if game.level.stage == 1:
+        game.screen.blit(game.LV1_FILTER, (0, 0))
+
     # Drawing the lights that fill transparent parts in floors
     if level.floor_lights: game.screen.blit(level.floor_lights, level.fl_pos)
     if level.floor_neon: game.screen.blit(level.floor_neon, level.fn_pos)

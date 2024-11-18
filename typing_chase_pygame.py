@@ -1,5 +1,3 @@
-import os
-
 import pygame
 import sys
 from modules import levels
@@ -86,10 +84,8 @@ def menu_interface(game):
     game.screen.blit(title_text1, (510, 40))
     game.screen.blit(title_text2, (520, 120))
 
-    choose_text = game.text_font.render('> press 0, 1, or 2 to choose level!', True, game.COLORS.white)
-    choose_text2 = game.text_font.render('> ENTER to play', True, game.COLORS.white)
+    choose_text = game.text_font.render('> Choose a level! ( ENTER to play)', True, game.COLORS.white)
     game.screen.blit(choose_text, (20, 20))
-    game.screen.blit(choose_text2, (20, 60))
 
     score_text = game.large_font.render(f' {game.data["cash"]}', True, game.COLORS.bright_cyan)
     game.screen.blit(score_text, (70, 470))
@@ -126,7 +122,7 @@ def player_select_interface(game):
                 game.account_string += f'|   ...'
                 final_dots = True
 
-    accounts_created = game.text_font.render('ACCOUNTS CREATED', True, game.COLORS.white)
+    accounts_created = game.text_font.render('ACCOUNTS CREATED:', True, game.COLORS.white)
     search_tip = game.small_font.render('( left or right arrow keys to search through them )',
                                         True, game.COLORS.bright_grey)
     previous_data = game.small_font.render(f'{game.account_string}', True, game.COLORS.white)
@@ -160,9 +156,19 @@ def player_select_interface(game):
     game.screen.blit(previous_data, (20, 500))
 
 
+def change_level(game, value):
+    game.level_index += value
+
+    # Minimium and maximum level indexes possible
+    if game.level_index < 0:
+        game.level_index = 0
+    elif game.level_index > 2:
+        game.level_index = 2
+
 def run(game):
     game.running = True
     game.player.reset_anim()
+    game.sound.play('menu', -1)
 
     while game.running:
         game.tick += 1
@@ -180,33 +186,42 @@ def run(game):
                 game.digit_pressed = event.unicode.lower()
 
                 ''' HANDLING MENU CONTROLS '''
-                if game.game_state == 'menu':
-                    if event.key == pygame.K_0:
-                        game.level = levels.Level(game, 0)
-                    elif event.key == pygame.K_1:
-                        game.level = levels.Level(game, 1)
-                    elif event.key == pygame.K_2:
-                        game.level = levels.Level(game, 2)
+                if game.state == 'menu':
+                    if event.key == pygame.K_UP or event.key == pygame.K_w:
+                        change_level(game, 1)
+                        game.level = levels.Level(game, game.level_index)
+                    if event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                        change_level(game, -1)
+                        game.level = levels.Level(game, game.level_index)
+
+                    if event.key == pygame.K_0: game.level = levels.Level(game, 0)
+                    if event.key == pygame.K_1: game.level = levels.Level(game, 1)
+                    if event.key == pygame.K_2: game.level = levels.Level(game, 2)
 
                     if event.key == pygame.K_RETURN:
-                        if game.data[f'level{game.level.stage}']['unlocked']:
-                            game.game_state = 'level'
-                        else:
-                            if game.data['cash'] >= game.LV_COSTS[f'level{game.level.stage}']:
-                                game.data['cash'] -= game.LV_COSTS[f'level{game.level.stage}']
-
-                                game.data[f'level{game.level.stage}']['unlocked'] = True
-                                game.sound.trigger.play()
-                                game.sound.levelup.play()
+                        if game.level:
+                            if game.data[f'level{game.level.stage}']['unlocked']:
+                                game.state = 'level'
                             else:
-                                game.sound.wrong_input.play()
+                                if game.data['cash'] >= game.LV_COSTS[f'level{game.level.stage}']:
+                                    game.data['cash'] -= game.LV_COSTS[f'level{game.level.stage}']
+
+                                    game.data[f'level{game.level.stage}']['unlocked'] = True
+                                    game.sound.trigger.play()
+                                    game.sound.levelup.play()
+                                else:
+                                    game.sound.wrong_input.play()
+
+                        else:
+                            game.level_index = 0j
                     elif event.key == pygame.K_ESCAPE:
                         game.level = None
+                        game.level_index = -1
 
                 ''' HANDLING PAUSED GAME '''
-                if game.game_state == 'pause':
+                if game.state == 'pause':
                     if event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
-                        game.game_state = 'level'
+                        game.state = 'level'
                         game.paused = False
                         game.sound.pause_sfx(False)
                         pygame.mixer.music.set_volume(0.3)
@@ -214,12 +229,12 @@ def run(game):
                         levels.reset_game(game)
 
                 ''' HANDLING LEVEL CONTROLS '''
-                if game.game_state == 'level':
+                if game.state == 'level':
                     game.player.key_pressed = event.unicode
 
                     if event.key == pygame.K_ESCAPE:
                         game.paused = True
-                        game.game_state = 'pause'
+                        game.state = 'pause'
                         game.sound.pause_sfx(True)
 
                     if not game.paused and game.player.lives > 0:
@@ -234,13 +249,16 @@ def run(game):
                             game.player.action = 'dodge'
 
 
-                ''' HANDLING GAME OVER SCREEN '''
-                if game.game_state == 'gameover':
+                ''' HANDLING RETURN TO MENU SCREENS '''
+                if game.state == 'gameover':
                     if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
                         levels.reset_game(game)
+                if game.state == 'tutorial_end':
+                    if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
+                        levels.reset_game(game, False)
 
                 ''' HANDLING ACCOUNT SCREEN CONTROLS '''
-                if game.game_state == 'player_select':
+                if game.state == 'player_select':
                     if event.key == pygame.K_LEFT or event.key == pygame.KSCAN_LEFT:
                         game.account_check_index -= 1
                         if game.account_check_index <= -len(game.account_names):
@@ -252,10 +270,10 @@ def run(game):
                             game.account_check_index = 0
 
                     if event.key == pygame.K_RETURN:
-                        # Loading player data or creating new data file
-                        game_data.load_datastore(game)
-                        game.game_state = 'menu'
-                        game.sound.play('menu')
+                        if len(game.player_name) >= 2:
+                            # Loading player data or creating new data file
+                            game_data.load_datastore(game)
+                            game.state = 'menu'
 
                     if event.key == pygame.K_BACKSPACE:
                         game.digit_pressed = 'backspace'
@@ -264,30 +282,32 @@ def run(game):
 
             elif event.type == pygame.KEYUP:
                 game.key_down = False
-            elif game.game_state == 'menu' and game.key_down:
+            elif game.state == 'menu' and game.key_down:
                 game.key_down = False
 
 
         # Loading different things depending on game state
-        if game.game_state == 'menu':
+        if game.state == 'menu':
             menu_interface(game)
-        if game.game_state == 'player_select':
+        if game.state == 'player_select':
             player_select_interface(game)
-        elif game.level and game.game_state == 'level':
+            game.on_select = True
+        elif game.level and game.state == 'level':
             game.level.run(game)
-        elif game.level and game.game_state == 'pause':
+        elif game.level and game.state == 'pause':
             game.level.pause(game)
-        elif game.level and game.game_state == 'gameover':
+        elif game.level and game.state == 'gameover':
             game.level.game_over(game)
+        elif game.level and game.state == 'tutorial_end':
+            game.level.tutorial_finish(game)
 
-        if game.game_state == 'menu' or game.game_state == 'player_select':
+        if game.state == 'menu' or game.state == 'player_select':
             game.stars_emitter.enabled = True
         else:
             game.stars_emitter.enabled = False
 
         # Updating the screen
         pygame.display.flip()
-
         game.clock.tick(game.FPS)
 
     # In case of problems with the loop

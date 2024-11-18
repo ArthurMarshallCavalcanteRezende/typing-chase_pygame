@@ -67,6 +67,9 @@ class Enemy:
         self.loaded = False
         self.is_word = False
         self.reached_player = False
+        self.touch_player = False
+        self.hit_player = False
+
         self.has_frame = has_frame
         self.size = size
         self.difficulty = difficulty
@@ -109,19 +112,50 @@ class Enemy:
         letter_list = [game.left_letters, game.right_letters]
 
         if self.difficulty > 1:
-            choosen_txt = game.all_words
+            if self.name == 'hivebox':
+                if game.player.difficulty < 4:
+                    choosen_txt = game.words_3
+                elif 4 <= game.player.difficulty < 7:
+                    choosen_txt = game.words_4
+                else:
+                    choosen_txt = game.words_5
+
+            elif self.name == 'mototaxi':
+                if game.player.difficulty < 5:
+                    choosen_txt = game.words_2
+                else:
+                    choosen_txt = game.words_3
+            else:
+                # For class B, C and D type robots
+                text_files = [
+                    game.words_2, game.words_3, game.words_4, game.words_5,
+                    game.words_6, game.words_7, game.words_8,
+                ]
+
+                word_size_range = game.player.difficulty // 3
+                if word_size_range > 3: word_size_range = 3
+
+                word_min_range = self.difficulty - 1
+                word_size_range += word_min_range
+                if word_size_range > len(text_files) - 1:
+                    word_size_range = len(text_files) - 1
+
+                choosen_txt = text_files[random.randint(word_min_range, word_size_range)]
         else:
             choosen_txt = random.choice(letter_list)
 
         new_word = load_random_word(choosen_txt)
 
         if len(new_word) > 1:
-            if len(new_word) <= 5:
-                speed = 2
-            else:
-                speed = 1
-
+            speed = 6 - len(new_word)
+            if speed < 1: speed = 1
             if self.name == 'hivebot': speed = 6
+            if self.name == 'mototaxi':
+                speed = game.player.difficulty
+                if speed < 5: speed = 5
+                elif speed > 9: speed = 9
+
+                speed = random.randint(5, speed)
 
         x_pos = game.SCREEN_WIDTH
         y_pos = 0
@@ -132,9 +166,12 @@ class Enemy:
         if game.level.stage == 0:
             y_pos = game.level.floor_y - int(self.size * 1.7)
         elif game.level.stage >= 1:
-            y_pos = random.randint(80, game.SCREEN_HEIGHT // 1.8)
+            y_pos = random.randint(80, int(game.SCREEN_HEIGHT // 1.8))
 
         self.speed = speed
+
+        if self.name == 'mototaxi':
+            y_pos = game.level.floor_y - int(self.size * 3.7)
 
         if not custom_pos:
             self.rect.x = x_pos
@@ -147,6 +184,9 @@ class Enemy:
 
         # Creating the text frame background and text
         bg_size_x = int(game.header_font.get_height() * math.ceil(len(self.target_text) / 2)) + 10
+        if len(self.target_text) == 2:
+            bg_size_x = int(bg_size_x) * 1.5
+
         bg_sized_y = int(game.header_font.get_height() * 1.5)
         self.bg = pygame.transform.scale(self.bg, (bg_size_x, bg_sized_y))
         self.bg_rect = self.bg.get_rect()
@@ -191,7 +231,12 @@ class Enemy:
             # Normal minibot movement
             if (self.name == 'normal_minibot'
                 or self.name == 'fake_minibot'
-                or self.name == 'target'):
+                or self.name == 'target'
+                or self.name == 'mototaxi'
+                or self.name == 'classB'
+                or self.name == 'classC'
+                or self.name == 'classD'
+            ):
                 self.direction_x = -self.speed
 
             # Wild minibot movement
@@ -240,36 +285,51 @@ class Enemy:
                     game.level.enemy_list.append(new_enemy)
 
         else:
-            # Moving to the player if reached far enough
-            direction_x = game.player.rect.x - self.rect.x
-            direction_y = game.player.rect.y - self.rect.y
-            distance = (direction_x ** 2 + direction_y ** 2) ** 0.5
-            if self.name == 'spike_minibot': distance = distance // 5
-            if self.name == 'fake_minibot': distance = distance // 6
+            if self.name != 'mototaxi':
+                # Moving to the player if reached far enough
+                direction_x = game.player.rect.x - self.rect.x
+                direction_y = game.player.rect.y - self.rect.y
+                distance = (direction_x ** 2 + direction_y ** 2) ** 0.5
+                if self.name == 'spike_minibot': distance = distance // 5
+                if self.name == 'fake_minibot': distance = distance // 6
 
-            if distance != 0:
-                if self.name != 'spike_minibot':
-                    self.direction_x = self.speed * (direction_x / distance)
-                self.direction_y = self.speed * (direction_y / distance)
+                if distance != 0:
+                    if self.name != 'spike_minibot':
+                        self.direction_x = self.speed * (direction_x / distance)
+                    self.direction_y = self.speed * (direction_y / distance)
 
         self.rect.x += self.direction_x
         self.rect.y += self.direction_y
         # Remove if offscreen
-        if self.rect.x < -100 or self.lifetime >= 30:
+        if self.rect.x < -self.size or self.lifetime >= 30:
             game.level.enemy_list.remove(self)
 
         # Damage player when colliding
         if self.rect.colliderect(game.player.hitbox) and self in game.level.enemy_list:
-            if self.name != 'fake_minibot' or self.reached_player:
+            can_hit = True
+
+            # Various conditions to detect if enemy can hit player
+            if (self.hit_player
+                or (self.touch_player and self.name == 'mototaxi')
+                or (game.player.dodge and self.name == 'mototaxi')
+                or (self.name == 'fake_minibot' and not self.reached_player)):
+                can_hit = False
+
+            self.touch_player = True
+
+            if can_hit:
                 if game.level.stage != 0:
                     game.player.damage(game)
                     game.sound.destroy.play()
                     game.sound.explode.play()
                 else:
-                    game.sound.wrong.play()
+                    game.sound.wrong_input.play()
 
                 game.player.combo = 0
-                game.level.enemy_list.remove(self)
+                self.hit_player = True
+
+                if self.name != 'mototaxi':
+                    game.level.enemy_list.remove(self)
 
         self.evil_face_rect.center = self.rect.center
         self.evil_face_rect.y += 6

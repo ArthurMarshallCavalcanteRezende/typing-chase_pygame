@@ -6,7 +6,7 @@ import traceback
 import pygame
 import sys
 import typing_chase_pygame
-from game_data import load_game
+import game_data
 
 ''' 
     !!! IMPORTANT !!! ALWAYS CREATE CONSTANTS/VARIABLES IN "game_data.py" TO ACCESS THEM ANYWHERE 
@@ -25,7 +25,7 @@ class game:
         # Access 'game_data.py' to find or add variables
 
         try:
-            load_game(self)
+            game_data.load_game(self)
         except Exception as e:
             print(f"Error while loading recourses: {e}")
             print(f"Check if any files have been changed or renamed.")
@@ -47,5 +47,6 @@ if __name__ == '__main__':
         print(f"Error while trying to run TYPING-CHASE: {e}")
         if DEBUG: traceback.print_exc()
     finally:
+        game_data.save_datastore(game)
         pygame.quit()
         sys.exit()

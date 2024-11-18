@@ -54,7 +54,6 @@ class Hands():
                 self.highlighted = finger
 
 
-
     def draw(self, screen):
         # Drawing every finger
         screen.blit(self.hand_sprite, self.rect)

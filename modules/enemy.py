@@ -100,6 +100,7 @@ class Enemy:
         self.direction_y = 0
         self.offset = 0
 
+        self.fake_triggered = False
         self.random_static_x = random.randint(530, 650)
         self.hivebox_interval = max(150 - (15 * game.player.difficulty), 30)
 
@@ -178,6 +179,11 @@ class Enemy:
         self.tick += 1
         self.sprite.update(self)
 
+        if (self.name == 'fake_minibot' and self.reached_player
+                and not self.fake_triggered):
+            self.fake_triggered = True
+            game.sound.trigger.play()
+
         if self.tick % game.FPS == 0:
             self.lifetime += 1
 
@@ -214,7 +220,6 @@ class Enemy:
 
             # Hivebox movement
             if self.name == 'hivebox':
-                current_interval = 100
                 if self.rect.centerx > self.random_static_x:
                     self.direction_x = -self.speed
                     current_interval = int(self.hivebox_interval * 1.5)
@@ -258,9 +263,10 @@ class Enemy:
             if self.name != 'fake_minibot' or self.reached_player:
                 if game.level.stage != 0:
                     game.player.damage(game)
-                    game.destroy_sound.play()
+                    game.sound.destroy.play()
+                    game.sound.explode.play()
                 else:
-                    game.wrong_sound.play()
+                    game.sound.wrong.play()
 
                 game.player.combo = 0
                 game.level.enemy_list.remove(self)

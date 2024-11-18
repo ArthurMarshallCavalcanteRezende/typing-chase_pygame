@@ -131,8 +131,7 @@ class Player:
         self.update_interval = self.base_interval
 
         # Game currency values
-        self.score = 0
-        self.run_score = 0
+        self.run_cash = 0
 
         self.distance = 0
         self.difficulty = 1
@@ -224,6 +223,7 @@ class Player:
                 if not self.dodge:
                     self.dodge = True
                     self.dodge_period[0] = 0
+                    game.sound.dodge.play()
 
             game.player.action = None
         else:
@@ -243,7 +243,7 @@ class Player:
             self.invincible = True
             self.iv_frames = 0
 
-            game.damage_sound.play()
+            game.sound.damage.play()
 
     def update(self, game):
         self.tick += 1

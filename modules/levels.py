@@ -1,5 +1,6 @@
 import pygame
 import random
+import game_data
 
 from modules import background as bg
 from modules import enemy
@@ -14,8 +15,19 @@ def reset_game(game):
     """RESET ALL GAME VARIABLES FOR RESTART OR NEW LEVEL"""
     game.sound.play('menu', -1)
 
-    if game.game_state == 'gameover':
-        game.player.score += game.player.run_score
+    game.data["cash"] += game.player.run_cash
+
+    if game.data["max_cash"] < game.data["cash"]:
+        game.data["max_cash"] = game.data["cash"]
+
+    if game.data[f"level{game.level.stage}"]["max_combo"] < game.player.max_combo:
+        game.data[f"level{game.level.stage}"]["max_combo"] = game.player.max_combo
+
+    if game.data[f"level{game.level.stage}"]["max_cash"] < game.player.run_cash:
+        game.data[f"level{game.level.stage}"]["max_cash"] = game.player.run_cash
+
+    if game.data[f"level{game.level.stage}"]["max_distance"] < game.player.distance:
+        game.data[f"level{game.level.stage}"]["max_distance"] = game.player.distance
 
     game.player.lives = 3
     game.player.combo = 0
@@ -23,7 +35,11 @@ def reset_game(game):
     game.player.difficulty = 1
     game.player.speed = 3
     game.player.distance = 0
-    game.player.run_score = 0
+    game.player.run_cash = 0
+
+    game.player.closest_enemy = None
+    game.player.dodge = False
+    game.player.invincible = False
 
     game.enemy_speed = 2
     game.spawn_interval = 2000
@@ -31,6 +47,8 @@ def reset_game(game):
     game.level = Level(game, game.level.stage)
     game.game_state = 'menu'
     game.paused = False
+
+    game_data.save_datastore(game)
 
 
 def level_config(game, level):
@@ -180,7 +198,7 @@ class Level:
         self.word_list = []
 
         self.spawn_max = 1
-        self.obstacle_chance = 15
+        self.obstacle_chance = 30
         self.nothing_chance = 20
 
         game.bullet_train_rect.centerx = -10
@@ -356,9 +374,7 @@ class Level:
                     to_gain = len(enemy.target_text) * game.player.max_combo
 
                     if self.stage != 0:
-                        game.player.run_score += to_gain * (self.stage + game.player.difficulty)
-
-                game.shoot_sound.play()
+                        game.player.run_cash += to_gain * (self.stage + game.player.difficulty)
 
             if enemy in self.enemy_list:
                 # If enemy is the current to the player
@@ -376,11 +392,14 @@ class Level:
                         enemy.reached_player = True
 
         self.hivebox_count = hiveboxes
+        if enemy_hit:
+            game.sound.shoot.play()
+
         if enemy_killed:
-            game.destroy_sound.play()
-            game.points_sound.play()
+            game.sound.destroy.play()
+            game.sound.points.play()
         elif game.player.key_pressed and not enemy_hit:
-            game.wrong_sound.play()
+            game.sound.wrong_input.play()
             game.player.combo -= 1 if game.player.combo > 0 else 0
 
         for obstacle in self.obstacle_list:
@@ -394,6 +413,7 @@ class Level:
 
         game.player.on_input(game)
 
+        ''' ===== CHECKING INSTANCES SPAWNING CONDITIONS ===== '''
         if not game.paused and game.player.lives > 0:
             # Enemy spawning every interval
             if (current_time - self.enemy_spawn_time > self.spawn_interval
@@ -414,7 +434,6 @@ class Level:
         game.right_hand.update(game)
         game.player.update(game)
 
-        game.tick += 1
         if game.tick % game.FPS == 0:
             self.time_elapsed += 1
 
@@ -441,8 +460,6 @@ class Level:
         if game.player.lives <= 0:
             game.game_state = 'gameover'
             game.paused = True
-
-        game.clock.tick(game.FPS)
 
     def draw(self, game):
         # Drawing everything
@@ -471,7 +488,7 @@ class Level:
 
         # Setting user interface
         distance_text = game.large_font.render(f'{game.player.distance} m', True, game.COLORS.white)
-        score_text = game.header_font.render(f' {game.player.run_score}', True, game.COLORS.white)
+        score_text = game.header_font.render(f' {game.player.run_cash}', True, game.COLORS.white)
         lives_text = game.text_font.render(f'Lives: {game.player.lives}', True, game.COLORS.white)
         combo_text = game.text_font.render(f'Combo: {game.player.combo}', True, game.COLORS.white)
 
@@ -495,7 +512,7 @@ class Level:
         game_over_text = game.title_font.render('GAME OVER', True, game.COLORS.red)
         distance_text = game.header_font.render(f'Distance Reached: {game.player.distance} M',
                                                  True, game.COLORS.bright_yellow)
-        disks_text = game.large_font.render(f'Gained: {game.player.run_score}!',
+        disks_text = game.large_font.render(f'Gained: {game.player.run_cash}!',
                                                  True, game.COLORS.bright_cyan)
         max_combo_text = game.text_font.render(f'Max Combo: {game.player.max_combo}', True,
                                           game.COLORS.white)

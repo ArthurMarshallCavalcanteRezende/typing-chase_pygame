@@ -79,6 +79,9 @@ class Obstacle:
             self.rect.y = game.player.rect.centery - (self.size // 1.5)
 
             if self.speed > 10: self.speed = 10
+            game.sound.rocket.stop()
+            game.sound.rocket.parent = self
+            game.sound.rocket.play(-1)
         elif self.name == 'barrier':
             self.rect.x = game.SCREEN_WIDTH + self.size
             self.rect.y = game.player.rect.centery - (self.size // 1.2)
@@ -107,8 +110,11 @@ class Obstacle:
         if self.rect.x < -100 or self.lifetime >= 30:
             game.level.obstacle_list.remove(self)
 
+            if self.name == 'missile' and game.sound.rocket.parent == self:
+                game.sound.rocket.stop()
+
         if self.rect.x < game.player.rect.x + self.size + 150 and self.alarm_on:
-            game.caution_sound.play()
+            game.sound.caution.play()
             self.alarm_on = False
 
         # Damage player when colliding
@@ -116,12 +122,17 @@ class Obstacle:
             if not game.player.dodge:
                 self.can_hit = False
                 game.player.damage(game)
-                game.destroy_sound.play()
+                game.sound.destroy.play()
 
                 game.player.combo = 0
 
                 if self.name == 'missile':
                     game.level.obstacle_list.remove(self)
+                    if self.name == 'missile' and game.sound.rocket.parent == self:
+                        game.sound.rocket.stop(True)
+                    game.sound.explode.play()
+                if self.name == 'barrier':
+                    game.sound.metal_hit.play()
             else:
                 self.can_hit = False
 

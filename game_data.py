@@ -10,15 +10,55 @@ import pygame
 import csv
 import os
 import random
+import json
 
 from modules import player as plr
 from modules import hands
 from modules import sound
-from modules import enemy
+from modules import particles
+
+DATA_FILENAME = 'player_data'
+ENEMY_FOLDER = './game_assets/enemy_sprites'
+OBSTACLE_FOLDER = './game_assets/obstacle_sprites'
+TEXT_FORMAT = "UTF-8"
+
+if os.path.exists(f'./{DATA_FILENAME}'):
+    ACCOUNT_FILES = [name for name in os.listdir(f'./{DATA_FILENAME}')]
+else:
+    ACCOUNT_FILES = []
+    os.makedirs(DATA_FILENAME)
+
+DATA_FORMAT = {
+    "name": f'player{len(ACCOUNT_FILES)}',
+    "cash": 0,
+    "max_cash": 0,
+    "tutorial_finished": False,
+
+    "level0": {
+        "unlocked": True,
+        "max_distance": 0,
+        "max_cash": 0,
+        "max_combo": 0,
+    },
+    "level1": {
+        "unlocked": False,
+        "max_distance": 0,
+        "max_cash": 0,
+        "max_combo": 0,
+    },
+    "level2": {
+        "unlocked": False,
+        "max_distance": 0,
+        "max_cash": 0,
+        "max_combo": 0,
+    },
+}
+
 
 class colors:
     black = (0, 0, 0),
     white = (255, 255, 255),
+    bright_grey = (180, 180, 180),
     grey = (128, 128, 128),
     dark_grey = (60, 60, 60),
 
@@ -35,10 +75,58 @@ class colors:
     blue = (0, 0, 255),
     cyan = (0, 255, 255),
     bright_cyan = (120, 255, 255)
+    space_blue = (20, 10, 40),
 
 
-ENEMY_FOLDER = './game_assets/enemy_sprites'
-OBSTACLE_FOLDER = './game_assets/obstacle_sprites'
+def save_datastore(game):
+    file_path = os.path.join(DATA_FILENAME, f'{game.player_name}.json')
+
+    if not os.path.exists(file_path):
+        game.data = DATA_FORMAT.copy()
+        game.data["name"] = game.player_name
+
+    with open(file_path, 'w') as file:
+        json.dump(game.data, file, indent=4)
+    print(f"> Data for {game.player_name} saved.")
+
+def update_missing_keys(data, template):
+    # Recursively update missing keys based on the template
+    if not isinstance(data, dict):
+        print("Invalid data format. Resetting to default.")
+        return template.copy()
+
+    for key, value in template.items():
+        if key not in data:
+            print(f"Adding missing key: {key}")
+            data[key] = value
+        elif isinstance(value, dict):
+            # Recursively check nested dictionaries
+            data[key] = update_missing_keys(data.get(key, {}), value)
+
+    return data
+
+def load_datastore(game):
+    file_path = os.path.join(DATA_FILENAME, f'{game.player_name}.json')
+
+    # Check if filepath doesn't exist and create new file
+    if not os.path.exists(file_path):
+        print(f'{game.player_name} is not part of "{DATA_FILENAME}", new data file will be created.')
+        save_datastore(game)
+
+
+    # Try to load existing data without errors
+    try:
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+            print(f"> Data for {game.player_name} loaded.")
+    except json.JSONDecodeError:
+        print("Error reading player file. Creating new data.")
+        game.data = DATA_FORMAT.copy()
+
+    # Check and update missing keys
+    updated_data = update_missing_keys(data, DATA_FORMAT)
+    game.data = updated_data
+
 
 def update_loading(game, loaded=False):
     game.loading_percent += random.randint(7, 15)
@@ -52,7 +140,6 @@ def update_loading(game, loaded=False):
     game.screen.fill(game.COLORS.black[0])
     game.screen.blit(game.loading_text, game.loadint_text_pos)
     pygame.display.flip()
-
 
 def load_animation(game, path, size):
     # Adding every frame image to the list to run through
@@ -74,9 +161,21 @@ def load_animation(game, path, size):
 
     return image_list
 
+
 def load_game(game):
+    game.data = {}
+
     game.loaded = False
     game.loading_percent = 0
+    game.account_names = []
+    game.account_string = ''
+    game.account_check_index = 0
+
+    for file in ACCOUNT_FILES:
+        name = file[:-5]
+        game.account_names.append(name)
+
+    game.account_names.sort()
 
     # Screen size and frames per second
     game.SCREEN_WIDTH, game.SCREEN_HEIGHT = 800, 600
@@ -86,6 +185,18 @@ def load_game(game):
     game.COLORS = colors()
     game.level = None
     game.sound = sound.Sound('./game_assets/music/', 'mp3')
+    game.player_name = ''
+    game.input_blink = False
+
+    game.eligible_names = [
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
+        'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
+        'y', 'z',
+
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+        
+        '_', '-'
+    ]
 
     game.screen = pygame.display.set_mode(
         (game.SCREEN_WIDTH, game.SCREEN_HEIGHT))
@@ -96,6 +207,7 @@ def load_game(game):
     game.large_font = pygame.font.Font('./game_assets/font.otf', 60)
     game.header_font = pygame.font.Font('./game_assets/font.otf', 40)
     game.text_font = pygame.font.Font('./game_assets/font.otf', 32)
+    game.small_font = pygame.font.Font('./game_assets/font.otf', 24)
 
     update_loading(game)
 
@@ -103,12 +215,18 @@ def load_game(game):
     game.clock = pygame.time.Clock()
     game.running = True
     game.paused = False
-    game.game_state = 'menu'
+    game.game_state = 'player_select'
     game.level = None
 
     game.LV0_NAME = '0 - TUTORIAL'
     game.LV1_NAME = '1 - Chapter 1'
     game.LV2_NAME = '2 - Chapter 2'
+
+    game.LV_COSTS = {
+        'level0': 0,
+        'level1': 200,
+        'level2': 10000,
+    }
 
     game.BASE_FLOOR_SPEED = 3
     game.BASE_BG_SPEED = 1
@@ -117,6 +235,7 @@ def load_game(game):
     game.bg_speed = game.BASE_BG_SPEED
 
     game.key_down = False
+    game.digit_pressed = None
 
     update_loading(game)
 
@@ -125,9 +244,20 @@ def load_game(game):
         (game.SCREEN_WIDTH, game.SCREEN_HEIGHT), pygame.SRCALPHA)
     game.DARK_FILTER.fill((0, 0, 0, 100))
 
+    game.LOCKED_FILTER = pygame.Surface(
+        (game.SCREEN_WIDTH, game.SCREEN_HEIGHT), pygame.SRCALPHA)
+    game.LOCKED_FILTER.fill((0, 0, 0, 200))
+
     game.GAMEOVER_FILTER = pygame.Surface(
         (game.SCREEN_WIDTH, game.SCREEN_HEIGHT), pygame.SRCALPHA)
     game.GAMEOVER_FILTER.fill((30, 10, 0, 200))
+
+    game.star_image = pygame.image.load(f'game_assets/star.png').convert_alpha()
+
+    # Particles
+    game.stars_emitter = particles.ParticleEmitter(game, game.star_image, (200, 200, 200, 130))
+    game.stars_emitter.size = [8, 16]
+    game.stars_emitter.random_alpha = [True, 80]
 
     # Color for each finger on the guide hands
     game.HAND_COLORS = {
@@ -160,6 +290,8 @@ def load_game(game):
 
     game.hivebox_sprite = load_animation(game, ENEMY_FOLDER + '/hivebox', 160)
     game.mototaxi_sprite = load_animation(game, ENEMY_FOLDER + '/mototaxi', 160)
+
+    update_loading(game)
 
     # Obstacle sprites
     game.missile_sprite = load_animation(game, OBSTACLE_FOLDER + '/missile', 80)
@@ -250,6 +382,9 @@ def load_game(game):
     game.menu_score_image = pygame.image.load(score_path).convert_alpha()
     game.menu_score_image = pygame.transform.scale(game.score_image, (50, 50))
 
+    game.locked_score_image = pygame.image.load(score_path).convert_alpha()
+    game.locked_score_image = pygame.transform.scale(game.score_image, (40, 40))
+
     game.death_score_image = pygame.image.load(score_path).convert_alpha()
     game.death_score_image = pygame.transform.scale(game.score_image, (60, 60))
 
@@ -262,25 +397,6 @@ def load_game(game):
     game.bullet_train = pygame.transform.scale(game.bullet_train, game.bullet_train_size)
     game.bullet_train_rect.center = (-10, game.SCREEN_HEIGHT // 1.5)
     game.bullet_train_speed = 5
-    update_loading(game)
-
-    # Sounds
-    game.destroy_sound = pygame.mixer.Sound('./game_assets/sfx/explosion.wav')
-    game.destroy_sound.set_volume(0.3)
-    game.points_sound = pygame.mixer.Sound('./game_assets/sfx/points.wav')
-    game.points_sound.set_volume(0.7)
-    game.damage_sound = pygame.mixer.Sound('./game_assets/sfx/damage.wav')
-    game.damage_sound.set_volume(0.6)
-    game.levelup_sound = pygame.mixer.Sound('./game_assets/sfx/levelup.wav')
-    game.levelup_sound.set_volume(0.5)
-    game.wrong_sound = pygame.mixer.Sound('./game_assets/sfx/wrong_input.wav')
-    game.wrong_sound.set_volume(0.4)
-    game.get_life_sound = pygame.mixer.Sound('./game_assets/sfx/get_life.wav')
-    game.get_life_sound.set_volume(0.5)
-    game.shoot_sound = pygame.mixer.Sound('./game_assets/sfx/shoot.wav')
-    game.shoot_sound.set_volume(0.3)
-    game.caution_sound = pygame.mixer.Sound('./game_assets/sfx/caution.wav')
-    game.caution_sound.set_volume(0.4)
     update_loading(game)
 
     # ZH4R0V Dubs

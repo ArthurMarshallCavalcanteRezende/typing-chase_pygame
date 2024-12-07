@@ -1,0 +1,6 @@
+venv
+*.pem
+*.pem
+*.pyc
+__pycache__
+*.Zone.Identifier

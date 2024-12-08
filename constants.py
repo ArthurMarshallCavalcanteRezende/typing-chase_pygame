@@ -5,8 +5,11 @@ from utils.asset_loader import load_text
 from utils.asset_loader import load_animation
 from utils.asset_loader import load_filelist
 
+pygame.init()
+
 DATA_FILENAME = 'data_storage'
 ENEMY_FOLDER = './assets/enemies'
+PLR_FOLDER = './assets/player'
 
 OBSTACLE_FOLDER = './assets/obstacles'
 TEXT_FORMAT = "UTF-8"
@@ -44,12 +47,21 @@ DATA_FORMAT = {
     },
 }
 
-COLORS = colors.RBG()
+colors = colors.Colors()
 account_names = []
 account_string = ''
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
+
+pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+# Fonts
+title_font = pygame.font.Font('assets/font.otf', 90)
+large_font = pygame.font.Font('assets/font.otf', 60)
+header_font = pygame.font.Font('assets/font.otf', 40)
+text_font = pygame.font.Font('assets/font.otf', 32)
+small_font = pygame.font.Font('assets/font.otf', 24)
 
 level_index = -1
 
@@ -61,24 +73,16 @@ account_names.sort()
 
 # Screen size and frames per second
 input_blink = False
-dodge_color = COLORS.red
 
 eligible_names = [
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
     'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
     'y', 'z',
 
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 
-                                                 '_', '-'
+    '_', '-'
 ]
-
-# Fonts
-title_font = pygame.font.Font('assets/font.otf', 90)
-large_font = pygame.font.Font('assets/font.otf', 60)
-header_font = pygame.font.Font('assets/font.otf', 40)
-text_font = pygame.font.Font('assets/font.otf', 32)
-small_font = pygame.font.Font('assets/font.otf', 24)
 
 TUTORIAL_CASH = 500
 LV0_NAME = '0 - TUTORIAL'
@@ -94,9 +98,6 @@ LV_COSTS = {
 BASE_FLOOR_SPEED = 3
 BASE_BUILD_SPEED = 2
 BASE_BG_SPEED = 1
-floor_speed = BASE_FLOOR_SPEED
-build_speed = BASE_BUILD_SPEED
-bg_speed = BASE_BG_SPEED
 
 key_down = False
 digit_pressed = None
@@ -130,14 +131,32 @@ LOCKED_FILTER = pygame.Surface(
     (SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
 LOCKED_FILTER.fill((0, 0, 0, 200))
 
-selfOVER_FILTER = pygame.Surface(
+GAMEOVER_FILTER = pygame.Surface(
     (SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-selfOVER_FILTER.fill((30, 10, 0, 200))
+GAMEOVER_FILTER.fill((30, 10, 0, 200))
 
-star_image = pygame.image.load(f'assets/star.png').convert_alpha()
+star_image = pygame.image.load(f'assets/icons/star.png').convert_alpha()
+
+plr_size = 120
+
+# Player sprites
+plr_sprites = {
+    'run_left': load_animation(PLR_FOLDER + '/run/left_run', plr_size),
+    'left_shoot': load_animation(PLR_FOLDER + '/shoot/left', plr_size),
+    'run_left_shoot': load_animation(PLR_FOLDER + '/run/left_shoot', plr_size),
+
+    'idle': load_animation(PLR_FOLDER + '/idle', plr_size),
+    'run_body': load_animation(PLR_FOLDER + '/run/body', plr_size),
+    'dodge_idle': load_animation(PLR_FOLDER + '/dodge/idle', plr_size),
+    'dodge_run': load_animation(PLR_FOLDER + '/dodge/run', plr_size),
+
+    'run_right': load_animation(PLR_FOLDER + '/run/right_run', plr_size),
+    'right_shoot': load_animation(PLR_FOLDER + '/shoot/right', plr_size),
+    'run_right_shoot': load_animation(PLR_FOLDER + '/run/right_shoot', plr_size),
+}
 
 # Enemy sprites
-text_frame = pygame.image.load(f'assets/text_frame.png').convert_alpha()
+text_frame = pygame.image.load(f'assets/UI/text_frame.png').convert_alpha()
 
 target_sprite = load_animation(ENEMY_FOLDER + '/target', 150)
 fake_minibot_sprite = load_animation(ENEMY_FOLDER + '/fake_minibot', 80)
@@ -177,6 +196,34 @@ obstacles = {
     'missile': [missile_sprite, 80, 0, False],
     'barrier': [barrier_sprite, 80, 0, False],
     'tumbleweed': [tumbleweed_sprite, 80, 0, False],
+}
+
+# Level sprites
+floor_size = (250, 250)
+build_size = (SCREEN_HEIGHT, SCREEN_HEIGHT)
+bg_size = (SCREEN_HEIGHT, SCREEN_HEIGHT)
+
+STAGES_PATH = 'assets/stages/'
+
+level_sprites = {
+    '0': {
+        'floor_sprites': load_filelist(STAGES_PATH + f'0/floor', floor_size),
+        'build_sprites': load_filelist(STAGES_PATH + f'0/building', build_size),
+        'bg_sprites': load_filelist(STAGES_PATH + f'0/background', bg_size),
+        'screen_bg': pygame.image.load(STAGES_PATH + f"0/screen_bg.png").convert_alpha(),
+    },
+    '1': {
+        'floor_sprites': load_filelist(STAGES_PATH + f'1/floor', floor_size),
+        'build_sprites': load_filelist(STAGES_PATH + f'1/building', build_size),
+        'bg_sprites': load_filelist(STAGES_PATH + f'1/background', bg_size),
+        'screen_bg': pygame.image.load(STAGES_PATH + f"1/screen_bg.png").convert_alpha(),
+    },
+    '2': {
+        'floor_sprites': load_filelist(STAGES_PATH + f'2/floor', floor_size),
+        'build_sprites': load_filelist(STAGES_PATH + f'2/building', build_size),
+        'bg_sprites': load_filelist(STAGES_PATH + f'2/background', bg_size),
+        'screen_bg': pygame.image.load(STAGES_PATH + f"2/screen_bg.png").convert_alpha(),
+    },
 }
 
 # Keys lists for each hand
@@ -221,32 +268,17 @@ y_padding = 90
 left_hand_pos = (x_padding, SCREEN_HEIGHT - y_padding)
 right_hand_pos = (SCREEN_WIDTH - x_padding, SCREEN_HEIGHT - y_padding)
 
-menu_ui = pygame.image.load(f"assets/side_interface.png").convert_alpha()
+menu_ui = pygame.image.load(f"assets/UI/side_interface.png").convert_alpha()
 menu_ui = pygame.transform.scale(menu_ui, (SCREEN_WIDTH, SCREEN_HEIGHT))
-menu_ui.fill(COLORS.black[0], special_flags=pygame.BLEND_RGBA_MULT)
+menu_ui.fill(colors.black, special_flags=pygame.BLEND_RGBA_MULT)
 
-score_path = f"assets/coins.png"
-score_image = pygame.image.load(score_path).convert_alpha()
-score_image = pygame.transform.scale(score_image, (40, 40))
+cash_image = pygame.image.load(f"assets/icons/cash.png").convert_alpha()
+cash_image = pygame.transform.scale(cash_image, (40, 40))
 
-menu_score_image = pygame.image.load(score_path).convert_alpha()
-menu_score_image = pygame.transform.scale(score_image, (50, 50))
-
-locked_score_image = pygame.image.load(score_path).convert_alpha()
-locked_score_image = pygame.transform.scale(score_image, (40, 40))
-
-death_score_image = pygame.image.load(score_path).convert_alpha()
-death_score_image = pygame.transform.scale(score_image, (60, 60))
-
-evil_face = pygame.image.load(f"assets/evil_face.png").convert_alpha()
+evil_face = pygame.image.load(f"assets/icons/evil_face.png").convert_alpha()
 evil_face = pygame.transform.scale(evil_face, (45, 45))
 
-bullet_train = pygame.image.load(f"assets/stages/2/bullet_train.png").convert_alpha()
-bullet_train_rect = bullet_train.get_rect()
-bullet_train_size = (750, 450)
-bullet_train = pygame.transform.scale(bullet_train, bullet_train_size)
-bullet_train_rect.center = (-10, SCREEN_HEIGHT // 1.5)
-bullet_train_speed = 5
+bullet_train_sprite = load_animation(f"assets/stages/2/bullet_train", (750, 450))
 
 # ZH4R0V Dubs
 zharov_speech1 = pygame.mixer.Sound('assets/stages/2/zharov_speech1.wav')

@@ -5,26 +5,32 @@ import json
 
 from modules import levels
 from modules.objects import player as plr
+from modules import hands
+from modules.game_object import GameObject
+from modules.sprite import Sprite
 
 from utils import sound
 from utils import particles
-from utils import colors
+from utils.colors import Colors
+colors = Colors()
 
 from interfaces import menu
 from interfaces import player_select
 from interfaces import game_over
 from interfaces import pause
-from interfaces import rewards
+from interfaces import tutorial_end
 from interfaces import loading
 
 import constants as c
+import text_storage
 
 class Game:
     def __init__(self):
+        pygame.init()
+
         # Data is the current player data
         self.data = {}
         self.loaded = False
-        self.account_names = {}
         self.account_check_index = 0
         self.player_name = ''
 
@@ -32,6 +38,9 @@ class Game:
         self.tick = 0
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((c.SCREEN_WIDTH, c.SCREEN_HEIGHT))
+
+        loading_text = c.large_font.render('Loading...', True, colors.white)
+        self.screen.blit(loading_text, (300, 350))
 
         # State is what defines what part of the game to run through (menu, level, pause, etc.)
         self.state = 'player_select'
@@ -48,11 +57,15 @@ class Game:
         self.level_index = -1
 
         # Classes
-        self.sound = sound.Sound('assets/music/', 'mp3')
-        self.colors = colors.RBG
-        self.player = plr.Player(self)
-        self.bullet_train = None
-        self.stars_emitter = particles.ParticleEmitter(self, c.star_image, (200, 200, 200, 130))
+        self.sound = sound.Sound()
+        self.text = text_storage.TextStorage()
+        self.player = plr.Player()
+        self.left_hand = hands.Hands('assets/hands/left_hand', c.left_hand_pos, 'left')
+        self.right_hand = hands.Hands('assets/hands/right_hand', c.right_hand_pos,'right')
+        self.stars_emitter = particles.ParticleEmitter(c.star_image, (200, 200, 200, 130))
+
+        self.bullet_train = GameObject('bullet_train', Sprite('idle', c.bullet_train_sprite),
+                                       (-10, c.SCREEN_HEIGHT // 1.5), 5)
 
         self.stars_emitter.size = [8, 16]
         self.stars_emitter.random_alpha = [True, 80]
@@ -108,8 +121,7 @@ class Game:
         return data
 
     def initialize(self):
-        pygame.init()
-
+        pygame.display.set_caption("Typing Chase - Beta Edition, 07/12/2024")
 
         self.running = True
         self.player.reset_anim()
@@ -152,6 +164,7 @@ class Game:
             self.level_index = 0
         elif self.level_index > 2:
             self.level_index = 2
+
     def run(self):
         self.initialize()
 
@@ -243,10 +256,7 @@ class Game:
                             self.player.action = 'dodge'
 
                 ''' HANDLING RETURN TO MENU SCREENS '''
-                if self.state == 'gameover':
-                    if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
-                        self.reset_game()
-                if self.state == 'tutorial_end':
+                if self.state == 'gameover' or self.state == 'tutorial_end':
                     if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
                         self.reset_game()
 
@@ -254,12 +264,12 @@ class Game:
                 if self.state == 'player_select':
                     if event.key == pygame.K_LEFT or event.key == pygame.KSCAN_LEFT:
                         self.account_check_index -= 1
-                        if self.account_check_index <= -len(self.account_names):
+                        if self.account_check_index <= -len(c.account_names):
                             self.account_check_index = 0
 
                     if event.key == pygame.K_RIGHT or event.key == pygame.KSCAN_RIGHT:
                         self.account_check_index += 1
-                        if self.account_check_index >= len(self.account_names):
+                        if self.account_check_index >= len(c.account_names):
                             self.account_check_index = 0
 
                     if event.key == pygame.K_RETURN:
@@ -282,7 +292,9 @@ class Game:
         # Loading different things depending on game state
         if self.state == 'menu':
             menu.display(self)
-        if self.state == 'player_select':
+        elif self.state == 'loading':
+            loading.display(self)
+        elif self.state == 'player_select':
             player_select.display(self)
             self.on_select = True
         elif self.level and self.state == 'level':
@@ -292,7 +304,7 @@ class Game:
         elif self.level and self.state == 'gameover':
             game_over.display(self)
         elif self.level and self.state == 'tutorial_end':
-            rewards.tutorial_finish(self)
+            tutorial_end.display(self)
 
         if self.state == 'menu' or self.state == 'player_select':
             self.stars_emitter.toggle(True)

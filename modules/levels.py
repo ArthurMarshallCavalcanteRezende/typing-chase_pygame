@@ -1,23 +1,27 @@
 import pygame
 import random
 
-from modules import background as bg
-from modules import enemy
-from modules import obstacle
-from utils.asset_loader import load_filelist
+from modules.terrain.background import Terrain
+from modules.terrain.background import update_terrain
+from modules.objects.enemy import Enemy
+from modules.objects.obstacle import Obstacle
+from utils.colors import Colors
+colors = Colors()
+
+import constants as c
 
 def level_config(game, level):
     level.assets = f"./assets/stages/{level.stage}"
     level.music = f"level{level.stage}"
 
     # Loading proper images
-    level.floor_sprites = load_filelist(f'{level.assets}/floor', level.floor_size)
-    level.build_sprites = load_filelist(f'{level.assets}/building', level.build_size)
-    level.bg_sprites = load_filelist(f'{level.assets}/background', level.bg_size)
+    level.floor_sprites = c.level_sprites[str(level.stage)]['floor_sprites']
+    level.build_sprites = c.level_sprites[str(level.stage)]['build_sprites']
+    level.bg_sprites = c.level_sprites[str(level.stage)]['bg_sprites']
 
-    level.floor_y = game.SCREEN_HEIGHT - (level.floor_size[1] // 4)
-    level.bg_y = (level.bg_size[1] // 2)
-    level.build_y =(level.build_size[1] // 2)
+    level.floor_y = c.SCREEN_HEIGHT - (c.floor_size[1] // 4)
+    level.bg_y = (c.bg_size[1] // 2)
+    level.build_y =(c.build_size[1] // 2)
 
     if level.stage == 0:
         level.possible_enemies = {
@@ -35,7 +39,7 @@ def level_config(game, level):
             'tumbleweed': ['tumbleweed', 100]
         }
 
-        level.name = game.LV0_NAME
+        level.name = c.LV0_NAME
         level.description = "like father, like son"
         level.difficulty_req = 200
         level.base_spawn_interval = 1800
@@ -44,7 +48,7 @@ def level_config(game, level):
         level.max_enemies = 3
         level.obstacle_chance = 20
 
-        game.player.speed = 0
+        level.player_speed = 0
     if level.stage == 1:
         level.possible_enemies = {
             'normal_minibot': ['normal_minibot', 60],
@@ -64,33 +68,32 @@ def level_config(game, level):
             'barrier': ['barrier', 70],
         }
 
-        level.name = game.LV1_NAME
+        level.name = c.LV1_NAME
         level.description = "Coffee for today's task"
         level.difficulty_req = 100
-        level.bg_color = game.COLORS.dark_grey
+        level.bg_color = colors.dark_grey
 
-        level.floor_lights = pygame.Surface((game.SCREEN_WIDTH, level.floor_y // 1.25))
-        level.floor_lights.fill(game.COLORS.bright_cyan)
-        level.fl_pos = (0, game.SCREEN_HEIGHT - 185)
+        level.floor_lights = pygame.Surface((c.SCREEN_WIDTH, level.floor_y // 1.25))
+        level.floor_lights.fill(colors.bright_cyan)
+        level.fl_pos = (0, c.SCREEN_HEIGHT - 185)
 
         level.max_enemy_distance = 200
         level.spawn_max = 1
         level.max_enemies = 6
         level.obstacle_chance = 20
 
-        game.player.speed = 3
+        level.player_speed = 3
 
-        level.floor_neon = pygame.Surface((game.SCREEN_WIDTH, level.floor_size[1] // 1.3))
-        level.floor_neon.fill(game.COLORS.black[0])
-        level.fn_pos = (0, game.SCREEN_HEIGHT - 170)
+        level.floor_neon = pygame.Surface((c.SCREEN_WIDTH, c.floor_size[1] // 1.3))
+        level.floor_neon.fill(colors.black[0])
+        level.fn_pos = (0, c.SCREEN_HEIGHT - 170)
     if level.stage == 2:
-        level.screen_bg = pygame.image.load(f"{level.assets}/screen_bg.png").convert_alpha()
-        level.floor_y = game.SCREEN_HEIGHT + 30
-        game.bullet_train_rect.centery = level.floor_y - 150
+        level.floor_y = c.SCREEN_HEIGHT + 30
+        game.bullet_train.rect.centery = level.floor_y - 150
 
-        level.floor_lights = pygame.Surface((game.SCREEN_WIDTH, 30))
-        level.floor_lights.fill(game.COLORS.yellow)
-        level.fl_pos = (0, game.SCREEN_HEIGHT - 90)
+        level.floor_lights = pygame.Surface((c.SCREEN_WIDTH, 30))
+        level.floor_lights.fill(colors.yellow)
+        level.fl_pos = (0, c.SCREEN_HEIGHT - 90)
 
         level.possible_enemies = {
             'normal_minibot': ['normal_minibot', 40],
@@ -109,7 +112,7 @@ def level_config(game, level):
             'missile': ['missile', 100],
         }
 
-        level.name = game.LV2_NAME
+        level.name = c.LV2_NAME
         level.description = "Freeze, ZH4R0V!!!"
 
         level.difficulty_req = 1500
@@ -122,7 +125,7 @@ def level_config(game, level):
         level.max_enemies = 9
         level.max_hivebox = 2
 
-        game.player.speed = 15
+        level.player_speed = 15
 
 
 class Level:
@@ -142,6 +145,8 @@ class Level:
         self.max_enemy_distance = 200
         self.enemy_speed = 2
         self.distance_per_frame = 1
+        self.player_speed = 3
+        self.difficulty = 1
 
         self.max_enemies = 6
         self.max_hivebox = 1
@@ -151,9 +156,9 @@ class Level:
         self.possible_enemies = {}
         self.possible_obstacles = {}
 
-        self.floor_size = (250, 250)
-        self.build_size = (game.SCREEN_HEIGHT, game.SCREEN_HEIGHT)
-        self.bg_size = (game.SCREEN_HEIGHT, game.SCREEN_HEIGHT)
+        self.floor_speed = c.BASE_FLOOR_SPEED
+        self.build_speed = c.BASE_BUILD_SPEED
+        self.bg_speed = c.BASE_BG_SPEED
 
         self.floor_list = []
         self.build_list = []
@@ -190,9 +195,6 @@ class Level:
         self.obstacle_chance = 20
         self.nothing_chance = 20
 
-        game.bullet_train_rect.centerx = -10
-        game.bullet_train_speed = 5
-
         level_config(game, self)
 
         new_floor_pos = (0, self.floor_y)
@@ -201,8 +203,8 @@ class Level:
 
         # Adding initial floor chunks
         if self.floor_sprites:
-            while new_floor_pos[0] < game.SCREEN_WIDTH:
-                new_floor = bg.Terrain(self, 'floor')
+            while new_floor_pos[0] < c.SCREEN_WIDTH:
+                new_floor = Terrain(self, 'floor')
                 new_floor.rect.center = new_floor_pos
                 new_floor_pos = (new_floor_pos[0] + new_floor.size[0], self.floor_y)
 
@@ -211,8 +213,8 @@ class Level:
 
         # Adding initial background chunks
         if self.bg_sprites:
-            while new_bg_pos[0] < game.SCREEN_WIDTH:
-                new_bg = bg.Terrain(self, 'background')
+            while new_bg_pos[0] < c.SCREEN_WIDTH:
+                new_bg = Terrain(self, 'background')
                 new_bg.rect.center = new_bg_pos
                 new_bg_pos = (new_bg_pos[0] + new_bg.size[0], self.bg_y)
 
@@ -221,8 +223,8 @@ class Level:
 
         # Adding initial building chunks
         if self.build_sprites:
-            while new_build_pos[0] < game.SCREEN_WIDTH:
-                new_build = bg.Terrain(self, 'building')
+            while new_build_pos[0] < c.SCREEN_WIDTH:
+                new_build = Terrain(self, 'building')
                 new_build.rect.center = new_build_pos
                 new_build_pos = (new_build_pos[0] + new_build.size[0], self.build_y)
 
@@ -268,9 +270,9 @@ class Level:
                 elif choosen_enemy == 'mototaxi':
                     continue
 
-                enemy_values = game.enemies[choosen_enemy]
+                enemy_values = c.enemies[choosen_enemy]
 
-                new_enemy = enemy.Enemy(
+                new_enemy = Enemy(
                     game, choosen_enemy, enemy_values[0], enemy_values[1],
                     enemy_values[2], enemy_values[3])
                 new_enemy.load(game, new_speed)
@@ -290,8 +292,8 @@ class Level:
             chances.append(self.possible_obstacles[obstacle_sprite][1])
 
         choosen_obstacle = random.choices(population=spawns, weights=chances)[0]
-        obstacle_values = game.obstacles[choosen_obstacle]
-        new_obstacle = obstacle.Obstacle(
+        obstacle_values = c.obstacles[choosen_obstacle]
+        new_obstacle = Obstacle(
             game, choosen_obstacle, obstacle_values[0], obstacle_values[1])
 
         if self.obstacles_spawned >= 3:
@@ -301,28 +303,28 @@ class Level:
 
         self.obstacle_list.append(new_obstacle)
 
-    def update_difficulty(self, game):
+    def increase_difficulty(self, game):
         # Increasing difficulty of the game over distances reached
         if game.player.distance > self.difficulty_req:
             self.difficulty_req *= 2
-            game.player.difficulty += 1
+            self.difficulty += 1
 
             if self.stage == 2: self.distance_per_frame += 1
 
             # Different changes depending on each difficulty until 8
-            if game.player.difficulty < 5:
-                game.player.speed += 1
+            if self.difficulty < 5:
+                self.player_speed += 1
                 self.possible_enemies['wild_minibot'][1] += 5
                 self.possible_enemies['spike_minibot'][1] += 3
             else:
-                game.player.speed += 2
+                self.player_speed += 2
 
-            if game.player.difficulty == 2:
+            if self.difficulty == 2:
                 if self.stage != 2:
                     self.possible_enemies['mototaxi'][1] += 5
                 else:
                     self.possible_enemies['classB'][1] += 5
-            if game.player.difficulty == 3:
+            if self.difficulty == 3:
                 self.spawn_max += 1
                 self.enemy_speed += 1
 
@@ -333,7 +335,7 @@ class Level:
                     self.possible_enemies['classC'][1] += 5
                 self.possible_enemies['hivebox'][1] += 5
                 self.possible_enemies['fake_minibot'][1] += 3
-            if game.player.difficulty == 4:
+            if self.difficulty == 4:
                 self.possible_enemies['fake_minibot'][1] += 5
                 if self.stage != 2:
                     self.possible_enemies['mototaxi'][1] += 2
@@ -341,11 +343,11 @@ class Level:
                     self.possible_enemies['classB'][1] += 10
                     self.possible_enemies['classC'][1] += 5
                     self.possible_enemies['classD'][1] += 2
-            if game.player.difficulty == 5:
+            if self.difficulty == 5:
                 self.max_hivebox += 1
                 self.possible_enemies['hivebox'][1] += 5
                 self.spawn_max += 1
-            if game.player.difficulty == 6:
+            if self.difficulty == 6:
                 self.possible_enemies['fake_minibot'][1] += 3
                 if self.stage != 2:
                     self.possible_enemies['mototaxi'][1] += 10
@@ -353,18 +355,14 @@ class Level:
                     self.possible_enemies['classB'][1] += 3
                     self.possible_enemies['classC'][1] += 5
                     self.possible_enemies['classD'][1] += 10
-            if game.player.difficulty == 7:
+            if self.difficulty == 7:
                 self.enemy_speed += 1
                 self.possible_enemies['fake_minibot'][1] += 5
 
     # Main function to run the game
     def run(self, game):
         if not self.started:
-            if self.stage == 2 and game.play_cutscene:
-                level_2_cutscene(game)
-            else:
-                game.cutscene_skipped = True
-                game.sound.play(self.music, -1)
+            game.sound.play(self.music, -1)
 
             if self.stage == 0 or self.stage == 2:
                 game.player.is_running = False
@@ -375,6 +373,10 @@ class Level:
 
             self.started = True
 
+        self.update(game)
+        self.draw(game)
+
+    def update(self, game):
         current_time = pygame.time.get_ticks()
         enemy_hit = False
         enemy_killed = False
@@ -389,14 +391,14 @@ class Level:
                 hiveboxes += 1
 
             if (game.player.key_pressed == enemy.remaining_text[0]
-                and enemy.rect.x < game.SCREEN_WIDTH):
+                    and enemy.rect.x < c.SCREEN_WIDTH):
                 if enemy.name == 'fake_minibot':
                     ignore_fake = False
 
                     # Avoiding triggering if other enemies have letter
                     for other_enemies in self.enemy_list:
                         if (enemy.remaining_text[0] in other_enemies.remaining_text
-                            and other_enemies.name != 'fake_minibot'):
+                                and other_enemies.name != 'fake_minibot'):
                             ignore_fake = True
 
                     if not ignore_fake:
@@ -418,11 +420,11 @@ class Level:
                     to_gain = len(enemy.target_text) * game.player.max_combo
 
                     if self.stage != 0:
-                        game.player.run_cash += to_gain * (self.stage + game.player.difficulty)
+                        game.player.run_cash += to_gain * (self.stage + self.difficulty)
 
             if enemy in self.enemy_list:
                 # If enemy is the current to the player
-                player_magnitude = enemy.rect.x - (game.SCREEN_WIDTH // 2) - 50
+                player_magnitude = enemy.rect.x - (c.SCREEN_WIDTH // 2) - 50
                 if player_magnitude < closest_to_plr[1]:
                     closest_to_plr = [enemy, player_magnitude]
 
@@ -463,8 +465,8 @@ class Level:
             if (current_time - self.spawn_time > self.spawn_interval
                     and self.time_elapsed > 1):
                 self.spawn_time = current_time
-                lowest_interval = self.base_spawn_interval - game.player.difficulty * 200
-                highest_interval = self.base_spawn_interval - game.player.difficulty * 50
+                lowest_interval = self.base_spawn_interval - self.difficulty * 200
+                highest_interval = self.base_spawn_interval - self.difficulty * 50
                 if lowest_interval < 500: lowest_interval = 500
                 self.spawn_interval = random.randint(lowest_interval, highest_interval)
 
@@ -481,20 +483,20 @@ class Level:
         if game.tick % game.FPS == 0:
             self.time_elapsed += 1
 
-        if game.bullet_train_rect.centerx < 200:
-            game.bullet_train_rect.centerx += game.bullet_train_speed
+        if game.bullet_train.rect.centerx < 200:
+            game.bullet_train.rect.centerx += game.bullet_train_speed
 
             # Slowly decreasing intro speed for bullet train
             game.bullet_train_speed *= 0.98
 
         # Incrementing distance every certain frames
         if self.stage != 0:
-            distance_threshold = 10 - (game.player.speed if game.player.speed < 10 else 9)
+            distance_threshold = 10 - (self.player_speed if self.player_speed < 10 else 9)
 
             if game.tick % distance_threshold == 0:
-                game.player.distance += self.distance_per_frame
+                game.player.increase_distance(self.distance_per_frame)
 
-                self.update_difficulty(game)
+                self.increase_difficulty(game)
 
         else:
             if game.player.max_combo >= 15 and not game.data["tutorial_finished"]:
@@ -502,11 +504,9 @@ class Level:
                 game.player.run_cash += game.TUTORIAL_CASH
                 game.data["tutorial_finished"] = True
 
-        game.floor_speed = game.BASE_FLOOR_SPEED + game.player.speed
-        game.build_speed = game.BASE_BUILD_SPEED + (game.player.speed // 1.5)
-        game.bg_speed = game.BASE_BG_SPEED + (game.player.speed // 2)
-
-        self.draw(game)
+        self.floor_speed = c.BASE_FLOOR_SPEED + self.player_speed
+        self.build_speed = c.BASE_BUILD_SPEED + (self.player_speed // 1.5)
+        self.bg_speed = c.BASE_BG_SPEED + (self.player_speed // 2)
 
         if game.player.lives <= 0:
             game.sound.rocket.stop(True)
@@ -516,11 +516,10 @@ class Level:
     def draw(self, game):
         # Drawing everything
         game.screen.fill(self.bg_color)
-
-        bg.update_terrain(game, game.level)
+        update_terrain(game, game.level)
 
         if self.stage == 2:
-            game.screen.blit(game.bullet_train, game.bullet_train_rect)
+            game.screen.blit(game.bullet_train, game.bullet_train.rect)
 
         game.left_hand.draw(game.screen)
         game.right_hand.draw(game.screen)
@@ -528,25 +527,17 @@ class Level:
         game.player.draw(game)
 
         # Setting user interface
-        distance_text = game.large_font.render(f'{game.player.distance} m', True, game.COLORS.white)
-        score_text = game.header_font.render(f' {game.player.run_cash}', True, game.COLORS.white)
-        lives_text = game.text_font.render(f'Lives: {game.player.lives}', True, game.COLORS.white)
-        combo_text = game.text_font.render(f'Combo: {game.player.combo}', True, game.COLORS.white)
+        game.text.levelUI_distance.set_text(f'{game.player.distance} m')
+        game.text.levelUI_cash.set_text(f' {game.player.run_cash}')
+        game.text.levelUI_lives.set_text(f'Lives: {game.player.lives}')
+        game.text.levelUI_combo.set_text(f'Combo: {game.player.combo}')
 
-        if game.tick % 5 == 0:
-            if game.dodge_color == game.COLORS.red:
-                game.dodge_color = game.COLORS.orange
-            elif game.dodge_color == game.COLORS.orange:
-                game.dodge_color = game.COLORS.red
-
-        dodge_text = game.header_font.render(f'DODGE!!', True, game.dodge_color)
-
-        # Actual word indicator
         if self.stage > 0:
-            game.screen.blit(distance_text, (10, -5))
+            game.text.levelUI_distance.draw(game)
 
-        game.screen.blit(score_text, (50, 70))
-        game.screen.blit(game.score_image, (5, 80))
+        game.text.levelUI_cash.draw(game)
+        game.text.levelUI_lives.draw(game)
+        game.text.levelUI_combo.draw(game)
 
         # Always drawing fake minibots behind normal enemies to avoid unfair combos
         for enemy in self.enemy_list:
@@ -559,15 +550,13 @@ class Level:
         for obstacle in self.obstacle_list:
             obstacle.draw(game)
 
-        game.screen.blit(lives_text, (10, game.SCREEN_HEIGHT - 80))
-        game.screen.blit(combo_text, (10, game.SCREEN_HEIGHT - 50))
-
         if game.player.dodge_warned:
             dodge_rect_x = game.player.rect.x + 8
             dodge_rect_y = game.player.rect.y - 60
-            game.screen.blit(dodge_text, (dodge_rect_x, dodge_rect_y))
+            game.text.levelUI_dodge.set_text(None, (dodge_rect_x, dodge_rect_y))
+            game.text.levelUI_dodge.draw()
 
         if self.stage == 0:
-            game.screen.blit(game.LV0_FILTER, (0, 0))
+            game.screen.blit(c.LV0_FILTER, (0, 0))
         if self.stage == 2:
-            game.screen.blit(game.LV2_FILTER, (0, 0))
+            game.screen.blit(c.LV2_FILTER, (0, 0))

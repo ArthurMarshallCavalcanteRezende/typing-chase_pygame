@@ -1,7 +1,9 @@
 import pygame
 import os
 
+MUSIC_PATH = './assets/music/'
 SFX_PATH = './assets/sfx'
+
 POSSIBLE_TYPES = ['wav', 'mp3', 'ogg']
 
 class SFX:
@@ -42,13 +44,13 @@ class SFX:
                 self.sfx.fadeout(self.fade_out)
 
 class Sound:
-    def __init__(self, path, file_type):
+    def __init__(self, file_type='mp3'):
         pygame.mixer.init()
         self.mute = False
         self.volume_offset = 0.3
         self.sfx_offset = 0.5
         self.button_pressed = False
-        self.path = path
+        self.path = MUSIC_PATH
         self.file_type = file_type
         self.sfx_list = []
 

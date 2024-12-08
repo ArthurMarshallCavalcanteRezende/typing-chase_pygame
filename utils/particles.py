@@ -1,5 +1,6 @@
 import pygame
 from random import randint
+import constants as c
 
 class SpawnParticle:
     def __init__(self, image=None, size=None, position=None, color=None, rotation=None):
@@ -77,7 +78,7 @@ class SpawnParticle:
             game.screen.blit(self.sprite, self.rect)
 
 class ParticleEmitter:
-    def __init__(self, game, image=None, base_color=(255, 255, 255, 255)):
+    def __init__(self, image=None, base_color=(255, 255, 255, 255)):
         self.image = image
         self.spawn_type = 'screen'
         self.base_color = base_color
@@ -94,8 +95,8 @@ class ParticleEmitter:
         self.base_rotation = [0, 0]
 
         # Values for random positions to spawn if spawn_type is 'screen'
-        self.screen_posx = [-200, game.SCREEN_WIDTH - 200]
-        self.screen_posy = [0, game.SCREEN_HEIGHT]
+        self.screen_posx = [-200, c.SCREEN_WIDTH - 200]
+        self.screen_posy = [0, c.SCREEN_HEIGHT]
 
         # Emission values for the particles
         self.rate = 5

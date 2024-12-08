@@ -1,4 +1,5 @@
 import random
+import constants as c
 
 def update_terrain(game, level):
     min_floor = None
@@ -21,7 +22,7 @@ def update_terrain(game, level):
                     min_bg = sprite
 
         # Detect if there should be more background chunks created after fully appearing
-        can_spawn = level.max_bg.rect.centerx <= game.SCREEN_WIDTH + level.max_bg.size[0]
+        can_spawn = level.max_bg.rect.centerx <= c.SCREEN_WIDTH + level.max_bg.size[0]
 
         if can_spawn and not game.paused:
             new_bg = Terrain(level, 'background')
@@ -49,7 +50,7 @@ def update_terrain(game, level):
                     min_build = sprite
 
         # Detect if there should be more floor chunks created after fully appearing
-        can_spawn = level.max_build.rect.centerx <= game.SCREEN_WIDTH + level.max_build.size[0]
+        can_spawn = level.max_build.rect.centerx <= c.SCREEN_WIDTH + level.max_build.size[0]
 
         if can_spawn and not game.paused:
             new_build = Terrain(level, 'building')
@@ -78,7 +79,7 @@ def update_terrain(game, level):
                     min_floor = sprite
 
         # Detect if there should be more floor chunks created after fully appearing
-        can_spawn = level.max_floor.rect.centerx <= game.SCREEN_WIDTH + level.max_floor.size[0]
+        can_spawn = level.max_floor.rect.centerx <= c.SCREEN_WIDTH + level.max_floor.size[0]
 
         if can_spawn and not game.paused:
             new_floor = Terrain(level, 'floor')

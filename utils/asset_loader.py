@@ -3,6 +3,16 @@ import pygame
 import csv
 
 def load_animation(path, size):
+    size_x = 0
+    size_y = 0
+
+    if isinstance(size, int):
+        size_x = size
+        size_y = size
+    else:
+        size_x = size[0]
+        size_y = size[1]
+
     # Adding every frame image to the list to run through
     name_list = []
     image_list = []
@@ -16,7 +26,7 @@ def load_animation(path, size):
     for filename in name_list:
         if filename.endswith('.png'):
             image = pygame.image.load(path + f'/{filename}').convert_alpha()
-            image = pygame.transform.scale(image, (size, size))
+            image = pygame.transform.scale(image, (size_x, size_y))
 
             image_list.append(image)
 

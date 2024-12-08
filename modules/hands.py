@@ -36,7 +36,7 @@ def create_finger(hand, name, path, color):
     hand.finger_list.append(finger)
     return finger
 
-class Hands():
+class Hands:
     def __init__(self, image_path, position, side):
         self.side = side
         self.hand_sprite = pygame.image.load(image_path + '/hand.png').convert_alpha()

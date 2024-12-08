@@ -1,0 +1,25 @@
+{
+    "name": "bruno",
+    "cash": 32864,
+    "max_cash": 32864,
+    "tutorial_finished": true,
+    "level0": {
+        "unlocked": true,
+        "max_distance": 0,
+        "max_cash": 500,
+        "max_combo": 15
+    },
+    "level1": {
+        "unlocked": true,
+        "max_distance": 6548,
+        "max_cash": 26808,
+        "max_combo": 61
+    },
+    "level2": {
+        "unlocked": true,
+        "cutscene_finished": false,
+        "max_distance": 18296,
+        "max_cash": 9344,
+        "max_combo": 25
+    }
+}

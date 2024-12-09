@@ -10,21 +10,21 @@ class Player(GameObject):
         super().__init__('player', Sprite('idle', c.plr_sprites['idle']), c.player_pos)
 
         # Left sprites put first so the game always draws them behind others
-        self.run_left = Sprite('run_left', c.plr_sprites['run_left'])
-        self.left_shoot = Sprite('left_shoot', c.plr_sprites['left_shoot'], True, 5)
-        self.run_left_shoot = Sprite('run_left_shoot', c.plr_sprites['run_left_shoot'])
+        self.run_left = Sprite('run_left', c.plr_sprites['run_left'], self.sprite_list)
+        self.left_shoot = Sprite('left_shoot', c.plr_sprites['left_shoot'], self.sprite_list, True, 5)
+        self.run_left_shoot = Sprite('run_left_shoot', c.plr_sprites['run_left_shoot'], self.sprite_list)
         self.moving_list.append(self.run_left)
         self.oneshot_list.append(self.left_shoot)
 
         # Main body sprites
-        self.run_body = Sprite('run_body', c.plr_sprites['run_body'])
-        self.dodge_idle = Sprite('dodge_idle', c.plr_sprites['dodge_idle'])
-        self.dodge_run = Sprite('dodge_run', c.plr_sprites['dodge_run'])
+        self.run_body = Sprite('run_body', c.plr_sprites['run_body'], self.sprite_list)
+        self.dodge_idle = Sprite('dodge_idle', c.plr_sprites['dodge_idle'], self.sprite_list)
+        self.dodge_run = Sprite('dodge_run', c.plr_sprites['dodge_run'], self.sprite_list)
 
         # Right sprites put last so the game always draws them on top of others
-        self.run_right = Sprite('run_right', c.plr_sprites['run_right'])
-        self.right_shoot = Sprite('right_shoot', c.plr_sprites['right_shoot'], True, 5)
-        self.run_right_shoot = Sprite('run_right_shoot', c.plr_sprites['run_right_shoot'])
+        self.run_right = Sprite('run_right', c.plr_sprites['run_right'], self.sprite_list)
+        self.right_shoot = Sprite('right_shoot', c.plr_sprites['right_shoot'], self.sprite_list, True, 5)
+        self.run_right_shoot = Sprite('run_right_shoot', c.plr_sprites['run_right_shoot'], self.sprite_list)
         self.moving_list.append(self.run_body)
         self.moving_list.append(self.run_right)
         self.oneshot_list.append(self.right_shoot)
@@ -93,6 +93,9 @@ class Player(GameObject):
         else:
             self.base_sprite.visible = True
 
+    def toggle_run(self, toggle):
+        self.is_moving = toggle
+
     # Handle the basics of shooting animation
     def shoot_anim(self, side):
         self.shoot_visual_cd[0] = 0
@@ -136,6 +139,8 @@ class Player(GameObject):
                 self.reset_anim()
 
     def on_input(self, game):
+        self.key_pressed = None
+
         if game.player.action:
             if game.player.action == 'shoot_left':
                 self.shoot_anim('left')
@@ -159,13 +164,32 @@ class Player(GameObject):
 
                 self.reset_anim()
 
-    def damage(self, game):
+    def damage(self, game, harmless=False):
         if not self.invincible:
-            self.lives -= 1
-            self.invincible = True
-            self.iv_frames = 0
+            if not harmless:
+                self.lives -= 1
+                self.invincible = True
+                self.iv_frames = 0
+                game.sound.damage.play()
 
-            game.sound.damage.play()
+            self.combo = 0
+
+    def reward(self, cash, multiplier=1):
+        self.run_cash += cash * multiplier
+
+    def success_hit(self, game, value):
+        if value > 3: value = 3
+        self.combo += value
+
+        if self.combo > self.max_combo:
+            self.max_combo = self.combo
+        elif game.level.stage == 0:
+            self.max_combo += value
+
+    def wrong_hit(self, game):
+        if self.key_pressed != ' ':
+            self.combo -= 1 if self.combo > 0 else 0
+            game.sound.wrong_input.play()
 
     def increase_distance(self, amount):
         self.distance += amount
@@ -206,8 +230,8 @@ class Player(GameObject):
             game.text.playerUI_closest.set_text(self.dots_text, self.closest_letter_rect)
 
         if game.level.stage == 2:
-            self.train_rect.x = game.bullet_train_rect.centerx - self.size
-            self.train_rect.y = game.bullet_train_rect.y + self.size // 2.2
+            self.train_rect.x = game.bullet_train.rect.centerx - self.size[0]
+            self.train_rect.y = game.bullet_train.rect.y + self.size[0] // 2.2
             self.rect = self.train_rect
         else:
             self.rect = self.base_rect
@@ -215,7 +239,8 @@ class Player(GameObject):
         super().update(game)
 
     def draw(self, game):
-        super().draw(game)
+        if not self.iv_blink[0]:
+            super().draw(game)
 
         game.screen.blit(self.letter_frame, self.letter_frame_rect)
         game.text.playerUI_closest.draw(game)

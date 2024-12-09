@@ -11,6 +11,9 @@ DATA_FILENAME = 'data_storage'
 ENEMY_FOLDER = './assets/enemies'
 PLR_FOLDER = './assets/player'
 
+ENEMY_CLASS_PATH = '/modules/objects/enemies/'
+OBSTACLE_CLASS_PATH = '/modules/objects/obstacles/'
+
 OBSTACLE_FOLDER = './assets/obstacles'
 TEXT_FORMAT = "UTF-8"
 
@@ -176,26 +179,10 @@ missile_sprite = load_animation(OBSTACLE_FOLDER + '/missile', 80)
 barrier_sprite = load_animation(OBSTACLE_FOLDER + '/barrier', 150)
 tumbleweed_sprite = load_animation(OBSTACLE_FOLDER + '/tumbleweed', 80)
 
-enemies = {
-    # Index meaning: 1 = sprite, 2 = size, 3 = difficulty, 4 = has_frame
-    'target': [target_sprite, 150, 1, True],
-    'fake_minibot': [fake_minibot_sprite, 80, 1, False],
-    'normal_minibot': [normal_minibot_sprite, 80, 1, False],
-    'wild_minibot': [wild_minibot_sprite, 80, 1, False],
-    'spike_minibot': [spike_minibot_sprite, 80, 1, False],
-
-    'hivebox': [hivebox_sprite, 80, 2, True],
-    'mototaxi': [mototaxi_sprite, 80, 2, True],
-
-    'classB': [classB_sprite, 120, 2, True],
-    'classC': [classC_sprite, 120, 3, True],
-    'classD': [classD_sprite, 160, 5, True],
-}
-
 obstacles = {
-    'missile': [missile_sprite, 80, 0, False],
-    'barrier': [barrier_sprite, 80, 0, False],
-    'tumbleweed': [tumbleweed_sprite, 80, 0, False],
+    'missile': [missile_sprite, 0, False],
+    'barrier': [barrier_sprite, 0, False],
+    'tumbleweed': [tumbleweed_sprite, 0, False],
 }
 
 # Level sprites
@@ -208,11 +195,13 @@ STAGES_PATH = 'assets/stages/'
 level_sprites = {
     '0': {
         'floor_sprites': load_filelist(STAGES_PATH + f'0/floor', floor_size),
+        'build_sprites': load_filelist(STAGES_PATH + f'0/building', build_size),
         'bg_sprites': load_filelist(STAGES_PATH + f'0/background', bg_size),
         'screen_bg': pygame.image.load(STAGES_PATH + f"0/screen_bg.png").convert_alpha(),
     },
     '1': {
         'floor_sprites': load_filelist(STAGES_PATH + f'1/floor', floor_size),
+        'build_sprites': load_filelist(STAGES_PATH + f'1/building', build_size),
         'bg_sprites': load_filelist(STAGES_PATH + f'1/background', bg_size),
         'screen_bg': pygame.image.load(STAGES_PATH + f"1/screen_bg.png").convert_alpha(),
     },
@@ -256,8 +245,7 @@ words_7 = load_text('words_7')
 words_8 = load_text('words_8')
 
 # Player configuration
-player_pos = ((SCREEN_WIDTH // 3) - 100,
-                   SCREEN_HEIGHT - 235)
+player_pos = ((SCREEN_WIDTH // 3) - 150, SCREEN_HEIGHT - 290)
 
 # Hands configuration
 x_padding = 280

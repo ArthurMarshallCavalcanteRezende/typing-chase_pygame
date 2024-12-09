@@ -4,10 +4,10 @@ import os
 import json
 
 from modules import levels
-from modules.objects import player as plr
 from modules import hands
-from modules.game_object import GameObject
 from modules.sprite import Sprite
+from modules.objects import player as plr
+from modules.objects.bullet_train import BulletTrain
 
 from utils import sound
 from utils import particles
@@ -64,8 +64,7 @@ class Game:
         self.right_hand = hands.Hands('assets/hands/right_hand', c.right_hand_pos,'right')
         self.stars_emitter = particles.ParticleEmitter(c.star_image, (200, 200, 200, 130))
 
-        self.bullet_train = GameObject('bullet_train', Sprite('idle', c.bullet_train_sprite),
-                                       (-10, c.SCREEN_HEIGHT // 1.5), 5)
+        self.bullet_train = BulletTrain()
 
         self.stars_emitter.size = [8, 16]
         self.stars_emitter.random_alpha = [True, 80]
@@ -277,6 +276,10 @@ class Game:
                             # Loading player data or creating new data file
                             self.load_data()
                             self.state = 'menu'
+
+                            if self.data['tutorial_finished']:
+                                if self.data['cash'] < c.LV_COSTS['level1'] and not self.data['level1']['unlocked']:
+                                    self.data['cash'] += 500
 
                     if event.key == pygame.K_BACKSPACE:
                         self.digit_pressed = 'backspace'

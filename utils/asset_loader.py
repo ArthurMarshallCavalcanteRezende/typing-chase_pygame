@@ -1,11 +1,11 @@
 import os
 import pygame
 import csv
+from pathlib import Path
+from importlib import util
+from random import choice, choices
 
 def load_animation(path, size):
-    size_x = 0
-    size_y = 0
-
     if isinstance(size, int):
         size_x = size
         size_y = size
@@ -37,6 +37,8 @@ def load_text(txt_name):
         reader = csv.reader(file)
         return [row[0] for row in reader]
 
+def load_random_word(words_list):
+    return choice(words_list).lower()
 
 def load_filelist(path, size):
     # Adding every image to the list to run through
@@ -59,3 +61,27 @@ def load_filelist(path, size):
     if len(image_list) < 1: image_list = None
 
     return image_list
+
+def weight_choices(given_list):
+    spawns = []
+    chances = []
+
+    for item in given_list:
+        spawns.append(given_list[item][0])
+        chances.append(given_list[item][1])
+
+    return choices(population=spawns, weights=chances)[0]
+
+def load_class(file_path, class_name):
+    file_path = Path(os.getcwd() + file_path)
+    module_name = file_path.stem
+
+    # Loading module
+    spec = util.spec_from_file_location(module_name, str(file_path))
+    module = util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except Exception as e:
+        raise ImportError(f"Error while loading module {module_name}: {e}")
+
+    return getattr(module, class_name)

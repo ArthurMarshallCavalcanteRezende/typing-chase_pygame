@@ -35,7 +35,7 @@ def update_terrain(game, level):
             level.bg_list.remove(min_bg)
 
         if game.level.stage == 1:
-            game.screen.blit(game.LV1_FILTER, (0, 0))
+            game.screen.blit(c.LV1_FILTER, (0, 0))
 
     ''' BUILDING SPRITE SYSTEM '''
     if level.build_list:
@@ -124,11 +124,11 @@ class Terrain:
     def update(self, game):
         speed = 0
         if self.name == 'floor':
-            speed = game.floor_speed
+            speed = game.level.floor_speed
         if self.name == 'background':
-            speed = game.bg_speed
+            speed = game.level.bg_speed
         if self.name == 'building':
-            speed = game.build_speed
+            speed = game.level.build_speed
 
         self.rect.x -= speed
 

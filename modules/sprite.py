@@ -1,5 +1,5 @@
 class Sprite:
-    def __init__(self, name, image_list, oneshot=False, custom_interval=None):
+    def __init__(self, name, image_list, sprite_list=None, oneshot=False, custom_interval=None):
         self.name = name
         self.image_list = image_list
         self.current_image = None
@@ -15,6 +15,9 @@ class Sprite:
         self.shot_enabled = False
 
         self.current_image = self.image_list[self.index]
+
+        if sprite_list:
+            sprite_list.append(self)
 
     def update(self, instance):
         self.tick += 1

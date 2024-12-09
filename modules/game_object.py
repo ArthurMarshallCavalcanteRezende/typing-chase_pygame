@@ -8,12 +8,11 @@ class GameObject:
         self.moving_list = []
         self.oneshot_list = []
 
-        self.position = position
         self.base_sprite = base_sprite
         self.sprite_list.append(base_sprite)
 
         self.size = self.base_sprite.current_image.get_size()
-        self.base_rect = pygame.Rect(self.position, self.size)
+        self.base_rect = pygame.Rect(position, self.size)
         self.rect = self.base_rect
 
         # Object movement
@@ -50,16 +49,16 @@ class GameObject:
                 self.kill()
 
         if self.alive:
-            self.is_moving = True
-            self.rect.x += self.speed_x
+            self.rect.x += -self.speed_x
             self.rect.y += self.speed_y
 
-    def draw(self, game):
-        # Drawing visible sprites and positioning them with offsets
         for sprite in self.sprite_list:
             if not game.paused:
                 sprite.update(self)
 
+    def draw(self, game):
+        # Drawing visible sprites and positioning them with offsets
+        for sprite in self.sprite_list:
             sprite.draw(game, self)
 
     def collides_with(self, other_rect):

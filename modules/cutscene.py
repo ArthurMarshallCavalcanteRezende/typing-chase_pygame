@@ -36,7 +36,7 @@ class Cutscene:
         animation_speed = 100
 
         for i in range(7):
-            resized_image = pygame.transform.scale(images[i], (800, 530))
+            resized_image = pygame.transform.scale(images[i], (850, 600))
             self.screen.blit(resized_image, (0, 0))
 
             if i == 1 or i == 2:
@@ -56,7 +56,7 @@ class Cutscene:
                 current_frame = (current_frame + 1) % len(self.idle_frames)
                 last_update_time = current_time
 
-            self.screen.blit(self.idle_frames[current_frame], (50, 250))
+            self.screen.blit(self.idle_frames[current_frame], (50, 310))
 
             pygame.display.flip()
 

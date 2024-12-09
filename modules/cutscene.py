@@ -1,7 +1,7 @@
 from utils.asset_loader import load_animation
-
 import pygame
 import time
+import random
 
 class Cutscene:
     def __init__(self):
@@ -28,7 +28,6 @@ class Cutscene:
         if len(audios) != 4:
             raise ValueError("A lista de áudios deve conter exatamente 4 itens.")
 
-
         durations = [5, 6, 12, 7, 8, 17, 5]
 
         current_frame = 0
@@ -37,31 +36,47 @@ class Cutscene:
 
         for i in range(7):
             resized_image = pygame.transform.scale(images[i], (850, 600))
-            self.screen.blit(resized_image, (0, 0))
 
-            if i == 1 or i == 2:
-                if i == 1:
-                    self.play_audio(audios[0])
-            elif i == 3 or i == 4:
-                if i == 3:
-                    self.play_audio(audios[1])
-            elif i == 5:
+            if i == 5:
                 self.play_audio(audios[2])
                 self.play_music("./assets/music/menace.mp3")
-            elif i == 6:
-                self.play_audio(audios[3])
+                explode_cutscene = pygame.mixer.Sound("./assets/sfx/explode_sound.mp3")
+                explode_cutscene.set_volume(0.4)
+                explode_cutscene.play()
 
-            current_time = pygame.time.get_ticks()
-            if current_time - last_update_time > animation_speed:
-                current_frame = (current_frame + 1) % len(self.idle_frames)
-                last_update_time = current_time
+                for _ in range(durations[i] * 10):
+                    offset_x = random.randint(-5, 5)
+                    offset_y = random.randint(-5, 5)
 
-            self.screen.blit(self.idle_frames[current_frame], (50, 310))
+                    self.screen.fill((0, 0, 0))
+                    self.screen.blit(resized_image, (offset_x, offset_y))
 
-            pygame.display.flip()
+                    current_time = pygame.time.get_ticks()
+                    if current_time - last_update_time > animation_speed:
+                        current_frame = (current_frame + 1) % len(self.idle_frames)
+                        last_update_time = current_time
 
-            for _ in range(durations[i] * 10):
-                self.clock.tick(10)
+                    self.screen.blit(self.idle_frames[current_frame], (50, 310))
+                    self.clock.tick(10)
+                    pygame.display.flip()
+
+            else:
+                self.screen.blit(resized_image, (0, 0))
+                if i == 1:
+                    self.play_audio(audios[0])
+                elif i == 3:
+                    self.play_audio(audios[1])
+                elif i == 6:
+                    self.play_audio(audios[3])
+
+                for _ in range(durations[i] * 10):
+                    current_time = pygame.time.get_ticks()
+                    if current_time - last_update_time > animation_speed:
+                        current_frame = (current_frame + 1) % len(self.idle_frames)
+                        last_update_time = current_time
+
+                    self.screen.blit(self.idle_frames[current_frame], (50, 310))
+                    self.clock.tick(10)
+                    pygame.display.flip()
 
         pygame.mixer.music.stop()
-

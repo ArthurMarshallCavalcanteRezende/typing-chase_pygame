@@ -59,7 +59,7 @@ def level_config(game, level):
         level.possible_enemies = {
             'normal_minibot': ['normal_minibot', 60, 0, 10],
             'wild_minibot':['wild_minibot', 30, 0, 6],
-            'spike_minibot':['spike_minibot', 2000, 0, 3],
+            'spike_minibot':['spike_minibot', 10, 0, 3],
             'fake_minibot': ['fake_minibot', 0, 0, 3],
 
             'mototaxi': ['mototaxi', 0, 0, 1],

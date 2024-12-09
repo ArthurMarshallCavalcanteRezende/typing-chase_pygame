@@ -1,0 +1,25 @@
+{
+    "name": "agoraacaba",
+    "cash": 3,
+    "max_cash": 3,
+    "tutorial_finished": false,
+    "level0": {
+        "unlocked": true,
+        "max_distance": 0,
+        "max_cash": 0,
+        "max_combo": 0
+    },
+    "level1": {
+        "unlocked": false,
+        "max_distance": 0,
+        "max_cash": 0,
+        "max_combo": 0
+    },
+    "level2": {
+        "unlocked": true,
+        "cutscene_finished": false,
+        "max_distance": 262,
+        "max_cash": 3,
+        "max_combo": 1
+    }
+}

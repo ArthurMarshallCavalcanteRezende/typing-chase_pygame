@@ -347,6 +347,7 @@ class Level:
                     "./assets/cutscene_2/scene_3.jpeg",
                     "./assets/cutscene_2/scene_4.jpeg",
                     "./assets/cutscene_2/scene_5.jpeg",
+                    "./assets/cutscene_2/scene_1.jpeg",
                     "./assets/cutscene_2/scene_6.jpeg",
                 ]
 

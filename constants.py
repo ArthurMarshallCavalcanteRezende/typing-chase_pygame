@@ -10,7 +10,6 @@ pygame.init()
 DATA_FILENAME = 'data_storage'
 ENEMY_FOLDER = './assets/enemies'
 PLR_FOLDER = './assets/player'
-
 ENEMY_CLASS_PATH = '/modules/objects/enemies/'
 OBSTACLE_CLASS_PATH = '/modules/objects/obstacles/'
 

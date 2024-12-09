@@ -59,7 +59,7 @@ def level_config(game, level):
         level.possible_enemies = {
             'normal_minibot': ['normal_minibot', 60, 0, 10],
             'wild_minibot':['wild_minibot', 30, 0, 6],
-            'spike_minibot':['spike_minibot', 10, 0, 3],
+            'spike_minibot':['spike_minibot', 2000, 0, 3],
             'fake_minibot': ['fake_minibot', 0, 0, 3],
 
             'mototaxi': ['mototaxi', 0, 0, 1],
@@ -125,7 +125,7 @@ def level_config(game, level):
         level.spawn_max = 3
         level.enemy_speed = 3
         level.max_enemy_distance = 350
-        level.obstacle_chance = 12
+        level.obstacle_chance = 0
         level.nothing_chance = 5
         level.max_enemies = 9
         level.max_hivebox = 2
@@ -152,6 +152,7 @@ class Level:
         self.distance_per_frame = 1
         self.player_speed = 3
         self.difficulty = 1
+        self.difficulty_increase = [False, 0]
 
         self.max_enemies = 6
         self.obstacles_spawned = 0
@@ -269,8 +270,13 @@ class Level:
     def increase_difficulty(self, game):
         # Increasing difficulty of the game over distances reached
         if game.player.distance > self.difficulty_req:
+            self.difficulty_increase[0] = True
+            game.sound.levelup.play()
+
             self.difficulty_req *= 2
             self.difficulty += 1
+            self.nothing_chance -= 3
+            if self.nothing_chance < 0: self.nothing_chance = 0
 
             if self.stage == 2: self.distance_per_frame += 1
 
@@ -387,10 +393,19 @@ class Level:
                     ignore_fake = False
 
                     # Avoiding triggering if other enemies have letter
-                    for other_enemies in self.enemy_list:
-                        if (enemy.remaining_text[0] in other_enemies.remaining_text
-                                and other_enemies.name != 'fake_minibot'):
+                    for other_enemy in self.enemy_list:
+                        if other_enemy == enemy:
+                            continue
+
+                        print(
+                            f"Checking {enemy.name} ({enemy.remaining_text[0]}) "
+                            f"against {other_enemy.name} ({other_enemy.remaining_text[0]})")
+
+                        if (enemy.remaining_text[0] == other_enemy.remaining_text[0]
+                                and other_enemy.name != 'fake_minibot'):
                             ignore_fake = True
+
+                            break
 
                     if not ignore_fake:
                         enemy.target_player()
@@ -398,10 +413,11 @@ class Level:
                     continue
 
                 enemy_hit = True
-                enemy.remaining_text = enemy.remaining_text[1:]
+                enemy.remove_text()
 
                 if not enemy.remaining_text:
-                    self.enemy_list.remove(enemy)
+                    if enemy in self.enemy_list:
+                        self.enemy_list.remove(enemy)
                     enemy_killed = True
                     enemy_value = len(enemy.target_text)
                     game.player.success_hit(game, enemy_value)
@@ -512,12 +528,20 @@ class Level:
         game.text.levelUI_lives.set_text(f'Lives: {game.player.lives}')
         game.text.levelUI_combo.set_text(f'Combo: {game.player.combo}')
 
-        if self.stage > 0:
-            game.text.levelUI_distance.draw(game)
+        game.text.levelUI_distance.draw(game)
 
+        game.screen.blit(c.stats_ui, (0, c.SCREEN_HEIGHT - c.stats_ui.get_height()))
         game.text.levelUI_cash.draw(game)
         game.text.levelUI_lives.draw(game)
         game.text.levelUI_combo.draw(game)
+
+        if self.difficulty_increase[0]:
+            self.difficulty_increase[1] += 1
+            game.text.levelUI_difficulty_up.draw(game)
+
+            if self.difficulty_increase[1] > 120:
+                self.difficulty_increase[0] = False
+                self.difficulty_increase[1] = 0
 
         # Always drawing fake minibots behind normal enemies to avoid unfair combos
         for enemy in self.enemy_list:

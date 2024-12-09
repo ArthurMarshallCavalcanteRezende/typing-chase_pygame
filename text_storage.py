@@ -2,6 +2,7 @@
     This module is used solely for storing all the pre-made text for the game,
     utilizing a custom text class for better customization and control.
 """
+import pygame.transform
 
 import constants as c
 from utils.text import Text
@@ -35,8 +36,10 @@ class TextStorage:
         self.levelUI_distance = Text('nil', (10, -5), c.large_font, colors.white)
         self.levelUI_cash = Text('nil', (45, 70), c.header_font, colors.bright_cyan)
         self.levelUI_lives = Text('Lives: nil', (10, 550), c.text_font, colors.white)
-        self.levelUI_combo = Text('Combo: nil', (10, 520), c.text_font, colors.white)
+        self.levelUI_combo = Text('Combo: nil', (10, 510), c.text_font, colors.white)
         self.levelUI_dodge = Text('DODGE!!', (10, 350), c.header_font, colors.red)
+        self.levelUI_difficulty_up = Text('< GOING FASTER! >', (270, 50), c.header_font, colors.white)
+        self.levelUI_difficulty_up.set_color_blink(True, colors.yellow, 5)
 
         self.levelUI_dodge.set_color_blink(True, colors.orange, 5)
         self.levelUI_cash.set_icon(c.cash_image, 35, (-3, 9))
@@ -50,8 +53,8 @@ class TextStorage:
         self.gameoverUI_title = Text('GAME OVER', (220, 70), c.title_font, colors.red)
         self.gameoverUI_distance = Text('Distance Reached: nil', (220, 180), c.header_font, colors.bright_yellow)
         self.gameoverUI_cash = Text('Gained: nil', (230, 240), c.large_font, colors.bright_cyan)
-        self.gameoverUI_combo = Text('Max Combo: nil', (220, 320), c.text_font, colors.white)
-        self.gameoverUI_option1 = Text('> SPACE: back to menu', (280, 400), c.text_font, colors.white)
+        self.gameoverUI_combo = Text('Max Combo: nil', (280, 320), c.text_font, colors.white)
+        self.gameoverUI_option1 = Text('> SPACE: back to menu', (270, 400), c.text_font, colors.white)
 
         self.gameoverUI_cash.set_icon(c.cash_image, 60, (-8, 13))
 
@@ -72,10 +75,10 @@ class TextStorage:
         self.tutorialUI_title = Text("You're getting the hang of it!", (60, 100), c.large_font, colors.white)
         self.tutorialUI_freebies = Text("Here, take these freebies:", (180, 180), c.header_font, colors.bright_yellow)
         self.tutorialUI_cash = Text(str(c.TUTORIAL_CASH), (350, 250), c.large_font, colors.bright_cyan)
-        self.tutorialUI_unlock= Text('Use these to unlock the next level!', (190, 100), c.text_font, colors.white)
-        self.tutorialUI_option1 = Text('> SPACE: back to menu', (280, 100), c.text_font, colors.white)
+        self.tutorialUI_unlock= Text('Use these to unlock the next level!', (190, 350), c.text_font, colors.white)
+        self.tutorialUI_option1 = Text('> SPACE: back to menu', (280, 400), c.text_font, colors.white)
 
-        self.tutorialUI_cash.set_icon(c.cash_image, 60, (0, 0))
+        self.tutorialUI_cash.set_icon(c.cash_image, 60, (-8, 13))
 
         # ============ PLAYER TEXT ============
         self.playerUI_closest = Text('...', (0, 0), c.large_font, colors.white)

@@ -16,20 +16,17 @@ class Obstacle(ObstacleModel):
         super().__init__(self.NAME, self.SPRITE_LIST)
         self.speed_x = 4 + game.level.floor_speed
         self.rect.x = c.SCREEN_WIDTH + self.size[0]
-        self.rect.y = game.player.rect.centery - self.size[0] * 1.2
-        self.update_interval = 6
+        self.rect.y = game.player.rect.centery - self.size[1] // 1.55
+        self.update_interval = 4
 
         if custom_pos:
             self.rect.x = custom_pos[0]
             self.rect.y = custom_pos[1]
 
         if self.speed_x > 10: self.speed_x = 10
-        game.sound.rocket.stop()
-        game.sound.rocket.parent = self
-        game.sound.rocket.play(-1)
 
     def update(self, game):
-        self.speed_x = -game.level.floor_speed
+        self.speed_x = game.level.floor_speed
         self.distance_warn = 15 * game.level.floor_speed
 
         super().update(game)

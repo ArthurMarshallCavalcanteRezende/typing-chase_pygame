@@ -60,12 +60,13 @@ class Sound:
         self.explode = SFX(self, 'explode', 0.3)
         self.shoot = SFX(self, 'shoot', 0.3)
         self.caution = SFX(self, 'caution', 0.4)
-        self.bomb_alarm = SFX(self, 'bomb_alarm', 0.4)
+        self.bomb_alarm = SFX(self, 'bomb_alarm', 0.7)
         self.trigger = SFX(self, 'trigger', 0.3)
 
         self.metal_hit = SFX(self, 'metal_hit', 0.5)
         self.damage = SFX(self, 'damage', 0.7)
         self.dodge = SFX(self, 'dodge', 0.5)
+        self.miss = SFX(self, 'miss', 0.5)
 
         self.rocket = SFX(self, 'rocket', 0.25, 1000, 1000)
         self.tumbleweed = SFX(self, 'tumbleweed', 0.3, 1000, 1000)
@@ -75,6 +76,7 @@ class Sound:
         self.points = SFX(self, 'points', 0.7)
         self.levelup = SFX(self, 'levelup', 0.5)
         self.get_life = SFX(self, 'get_life', 0.5)
+        self.milestone = SFX(self, 'milestone', 0.2)
 
         # Input SFX
         self.wrong_input = SFX(self, 'wrong_input', 0.4)

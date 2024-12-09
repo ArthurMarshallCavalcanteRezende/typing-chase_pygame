@@ -17,7 +17,7 @@ class Enemy(EnemyModel):
         super().__init__(self.NAME, self.SPRITE_LIST)
         self.is_word = True
         self.rect.x = c.SCREEN_WIDTH
-        self.rect.y = game.level.floor_y - 600
+        self.rect.y = game.level.floor_y - self.size[1] * 1.6
 
         self.difficulty = 1
         self.text_frame = True
@@ -43,7 +43,9 @@ class Enemy(EnemyModel):
         # Damage player when colliding
         if self.rect.colliderect(game.player.hitbox) and not self.hit_player:
             self.touch_player = True
-            super().damage_player(game, True)
+
+            if not game.player.dodge and not self.touch_player:
+                super().damage_player(game, True)
 
     def draw(self, game):
         super().draw(game)

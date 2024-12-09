@@ -41,10 +41,10 @@ class GameObject:
     def update(self, game):
         self.tick += 1
 
-        if self.max_lifetime > 0:
-            if game.FPS % self.tick == 0:
-                self.lifetime += 1
+        if self.tick % game.FPS == 0:
+            self.lifetime += 1
 
+        if self.max_lifetime > 0:
             if self.lifetime > self.max_lifetime:
                 self.kill()
 

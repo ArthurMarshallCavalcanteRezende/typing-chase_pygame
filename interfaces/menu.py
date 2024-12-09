@@ -65,6 +65,7 @@ def display(game):
     else:
         game.text.menuUI_level_desc.set_text('- - - - =|  CHOOSE A LEVEL!  |')
 
+    game.screen.blit(c.log_ui, (0, c.log_ui.get_height() // 3))
     game.text.menuUI_account.set_text(f'> Logged as: {game.player_name}')
     game.text.menuUI_cash.set_text(f'{game.data["cash"]}')
 

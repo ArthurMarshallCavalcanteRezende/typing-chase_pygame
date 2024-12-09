@@ -8,7 +8,7 @@ from utils.colors import Colors
 colors = Colors()
 
 class Enemy(EnemyModel):
-    NAME = 'normal_minibot'
+    NAME = 'classC'
     SPRITE_LIST = Sprite('idle', c.classC_sprite)
     TEXT_LIST = [c.words_2, c.words_3, c.words_4, c.words_5,
                 c.words_6, c.words_7, c.words_8]

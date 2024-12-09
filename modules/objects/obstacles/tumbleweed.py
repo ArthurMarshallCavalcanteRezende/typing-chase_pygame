@@ -17,7 +17,7 @@ class Obstacle(ObstacleModel):
         super().__init__(self.NAME, self.SPRITE_LIST)
         self.speed_x = 3
         self.rect.x = c.SCREEN_WIDTH + self.size[0]
-        self.rect.y = game.player.rect.centery - (self.size[0] // 1.2)
+        self.rect.y = game.player.rect.bottom - game.player.size[1] // 1.5
         self.has_tip = True
 
         self.distance_warn = 100

@@ -168,7 +168,7 @@ wild_minibot_sprite = load_animation(ENEMY_FOLDER + '/wild_minibot', 80)
 spike_minibot_sprite = load_animation(ENEMY_FOLDER + '/spike_minibot', 80)
 
 hivebox_sprite = load_animation(ENEMY_FOLDER + '/hivebox', 160)
-mototaxi_sprite = load_animation(ENEMY_FOLDER + '/mototaxi', 160)
+mototaxi_sprite = load_animation(ENEMY_FOLDER + '/mototaxi', 180)
 
 classB_sprite = load_animation(ENEMY_FOLDER + '/classB', 120)
 classC_sprite = load_animation(ENEMY_FOLDER + '/classC', 120)
@@ -178,12 +178,6 @@ classD_sprite = load_animation(ENEMY_FOLDER + '/classD', 160)
 missile_sprite = load_animation(OBSTACLE_FOLDER + '/missile', 80)
 barrier_sprite = load_animation(OBSTACLE_FOLDER + '/barrier', 150)
 tumbleweed_sprite = load_animation(OBSTACLE_FOLDER + '/tumbleweed', 80)
-
-obstacles = {
-    'missile': [missile_sprite, 0, False],
-    'barrier': [barrier_sprite, 0, False],
-    'tumbleweed': [tumbleweed_sprite, 0, False],
-}
 
 # Level sprites
 floor_size = (250, 250)
@@ -255,6 +249,14 @@ right_hand_pos = (SCREEN_WIDTH - x_padding, SCREEN_HEIGHT - y_padding)
 menu_ui = pygame.image.load(f"assets/UI/side_interface.png").convert_alpha()
 menu_ui = pygame.transform.scale(menu_ui, (SCREEN_WIDTH, SCREEN_HEIGHT))
 menu_ui.fill(colors.black, special_flags=pygame.BLEND_RGBA_MULT)
+
+stats_ui = menu_ui.copy()
+stats_ui = pygame.transform.scale(stats_ui, (300, 100))
+stats_ui = pygame.transform.flip(stats_ui, True, False)
+stats_ui.set_alpha(120)
+
+log_ui = stats_ui.copy()
+log_ui = pygame.transform.scale(log_ui, (800, 50))
 
 cash_image = pygame.image.load(f"assets/icons/cash.png").convert_alpha()
 cash_image = pygame.transform.scale(cash_image, (40, 40))

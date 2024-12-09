@@ -1,25 +1,25 @@
 {
-    "name": "player2",
-    "cash": 91080,
-    "max_cash": 91080,
+    "name": "paulo",
+    "cash": 23551,
+    "max_cash": 24493,
     "tutorial_finished": true,
     "level0": {
         "unlocked": true,
-        "max_distance": 0,
-        "max_cash": 0,
-        "max_combo": 26
+        "max_distance": 1000000,
+        "max_cash": 500,
+        "max_combo": 16
     },
     "level1": {
         "unlocked": true,
-        "max_distance": 280,
-        "max_cash": 135,
-        "max_combo": 8
+        "max_distance": 100000515,
+        "max_cash": 24193,
+        "max_combo": 39
     },
     "level2": {
         "unlocked": true,
         "cutscene_finished": false,
-        "max_distance": 5098,
-        "max_cash": 764,
-        "max_combo": 16
+        "max_distance": 1008052,
+        "max_cash": 2831,
+        "max_combo": 21
     }
 }

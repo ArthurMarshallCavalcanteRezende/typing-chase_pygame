@@ -43,7 +43,8 @@ class EnemyModel(GameObject):
         if word_size_range > len(text_files) - 1:
             word_size_range = len(text_files) - 1
 
-        return text_files[randint(word_min_range, word_size_range)]
+        new_file = text_files[randint(word_min_range, word_size_range)]
+        return [new_file]
 
     def load(self, game, text_list, custom_pos=None):
         if custom_pos:
@@ -67,7 +68,7 @@ class EnemyModel(GameObject):
         self.bg_rect = self.bg.get_rect()
         self.bg_rect.x = c.SCREEN_WIDTH + 200
 
-        if self.is_word and self.name == 'hivebox' or self.name == 'mototaxi':
+        if self.is_word and (self.name != 'hivebox' and self.name != 'mototaxi'):
             self.speed_x = 6 - len(new_word)
             if self.speed_x < 1: self.speed_x = 1
 
@@ -98,16 +99,19 @@ class EnemyModel(GameObject):
 
     def render_text(self, game):
         self.bg_rect.center = self.rect.center
-        self.bg_rect.centerx -= self.size[0] // 6
         self.bg_rect.y = self.rect.y - 70
 
         if self.text_frame:
-            text_lengh = int(len(self.target_text) ** 1.5)
+            text_size = len(self.target_text)
 
             if len(self.target_text) > 1:
-                new_x = 6 + text_lengh
+                new_x = int(text_size ** 2.4)
+                if text_size == 2: new_x += 8
+                if text_size > 5: new_x -= int(text_size ** 1.8)
+                if text_size > 7: new_x -= int(text_size ** 1.8)
             else:
                 new_x = 6
+                self.bg_rect.centerx -= self.size[0] // 6
 
             new_text_rect = (self.bg_rect.centerx - new_x,
                              self.bg_rect.centery - 9)
@@ -121,6 +125,9 @@ class EnemyModel(GameObject):
                              self.rect.centery - new_y)
 
         self.text.set_text(f'{self.remaining_text}', new_text_rect)
+
+    def remove_text(self):
+        self.remaining_text = self.remaining_text[1:]
     
     def get_highlight(self, game):
         found_finger = None

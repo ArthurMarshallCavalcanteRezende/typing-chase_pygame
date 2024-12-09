@@ -58,6 +58,7 @@ class Player(GameObject):
         self.iv_frames = 0
         self.invincibility_time = 90
         self.iv_blink = [False, 0, 30]
+        self.base_update_interval = 8
 
         self.reset_anim()
 
@@ -228,6 +229,10 @@ class Player(GameObject):
                 self.dots_text += '.'
                 if len(self.dots_text) > 3: self.dots_text = '.'
             game.text.playerUI_closest.set_text(self.dots_text, self.closest_letter_rect)
+
+        if game.level.stage == 1:
+            self.update_interval = self.base_update_interval - game.level.difficulty
+            if self.update_interval < 3: self.update_interval = 3
 
         if game.level.stage == 2:
             self.train_rect.x = game.bullet_train.rect.centerx - self.size[0]

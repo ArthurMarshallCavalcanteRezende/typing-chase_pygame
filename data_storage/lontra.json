@@ -1,0 +1,25 @@
+{
+    "name": "lontra",
+    "cash": 8637,
+    "max_cash": 13637,
+    "tutorial_finished": true,
+    "level0": {
+        "unlocked": true,
+        "max_distance": 0,
+        "max_cash": 500,
+        "max_combo": 15
+    },
+    "level1": {
+        "unlocked": true,
+        "max_distance": 4084,
+        "max_cash": 13337,
+        "max_combo": 49
+    },
+    "level2": {
+        "unlocked": true,
+        "cutscene_finished": false,
+        "max_distance": 0,
+        "max_cash": 0,
+        "max_combo": 0
+    }
+}

@@ -5,6 +5,8 @@ from modules.terrain.background import Terrain
 from modules.terrain.background import update_terrain
 from utils.asset_loader import load_class, weight_choices
 from utils.colors import Colors
+from modules.cutscene import Cutscene
+cutscene = Cutscene()
 colors = Colors()
 
 import constants as c
@@ -323,14 +325,40 @@ class Level:
     # Main function to run the game
     def run(self, game):
         if not self.started:
-            game.sound.play(self.music, -1)
 
             if self.stage == 1:
                 game.player.toggle_run(True)
             else:
                 game.player.toggle_run(False)
 
+            if self.stage == 2:
+
+                cutscene.set_screen(game.screen)
+
+                image_paths = [
+                    "./assets/cutscene_2/scene_1.jpeg",
+                    "./assets/cutscene_2/scene_2.jpeg",
+                    "./assets/cutscene_2/scene_3.jpeg",
+                    "./assets/cutscene_2/scene_4.jpeg",
+                    "./assets/cutscene_2/scene_5.jpeg",
+                    "./assets/cutscene_2/scene_6.jpeg",
+                ]
+
+                images = [pygame.image.load(path).convert_alpha() for path in image_paths]
+
+                audios = [
+                    "assets/stages/2/zharov_speech1.wav",
+                    "assets/stages/2/zharov_speech2.wav",
+                    "assets/stages/2/zharov_power.wav",
+                    "assets/stages/2/zharov_speech3.wav"
+                ]
+
+                # Executa a cutscene
+                cutscene.run_cutscene(images, audios)
+
             game.player.reset_anim()
+
+            game.sound.play(self.music, -1)
 
             self.started = True
 

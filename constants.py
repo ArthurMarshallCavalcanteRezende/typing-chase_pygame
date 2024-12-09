@@ -95,7 +95,7 @@ LV2_NAME = '2 - Chapter 2'
 LV_COSTS = {
     'level0': 0,
     'level1': 200,
-    'level2': 5000,
+    'level2': 0,
 }
 
 BASE_FLOOR_SPEED = 3

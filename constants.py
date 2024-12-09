@@ -195,13 +195,11 @@ STAGES_PATH = 'assets/stages/'
 level_sprites = {
     '0': {
         'floor_sprites': load_filelist(STAGES_PATH + f'0/floor', floor_size),
-        'build_sprites': load_filelist(STAGES_PATH + f'0/building', build_size),
         'bg_sprites': load_filelist(STAGES_PATH + f'0/background', bg_size),
         'screen_bg': pygame.image.load(STAGES_PATH + f"0/screen_bg.png").convert_alpha(),
     },
     '1': {
         'floor_sprites': load_filelist(STAGES_PATH + f'1/floor', floor_size),
-        'build_sprites': load_filelist(STAGES_PATH + f'1/building', build_size),
         'bg_sprites': load_filelist(STAGES_PATH + f'1/background', bg_size),
         'screen_bg': pygame.image.load(STAGES_PATH + f"1/screen_bg.png").convert_alpha(),
     },

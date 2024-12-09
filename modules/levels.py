@@ -15,9 +15,10 @@ def level_config(game, level):
 
     # Loading proper images
     level.floor_sprites = c.level_sprites[str(level.stage)]['floor_sprites']
-    level.build_sprites = c.level_sprites[str(level.stage)]['build_sprites']
     level.bg_sprites = c.level_sprites[str(level.stage)]['bg_sprites']
     level.screen_bg = c.level_sprites[str(level.stage)]['screen_bg']
+    if level.stage == 2:
+        level.build_sprites = c.level_sprites[str(level.stage)]['build_sprites']
 
     level.floor_y = c.SCREEN_HEIGHT - (c.floor_size[1] // 4)
     level.bg_y = (c.bg_size[1] // 2)

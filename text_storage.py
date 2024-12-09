@@ -71,7 +71,7 @@ class TextStorage:
         # ============ TUTORIAL END TEXT ============
         self.tutorialUI_title = Text("You're getting the hang of it!", (60, 100), c.large_font, colors.white)
         self.tutorialUI_freebies = Text("Here, take these freebies:", (180, 180), c.header_font, colors.bright_yellow)
-        self.tutorialUI_cash = Text(c.TUTORIAL_CASH, (350, 250), c.large_font, colors.bright_cyan)
+        self.tutorialUI_cash = Text(str(c.TUTORIAL_CASH), (350, 250), c.large_font, colors.bright_cyan)
         self.tutorialUI_unlock= Text('Use these to unlock the next level!', (190, 100), c.text_font, colors.white)
         self.tutorialUI_option1 = Text('> SPACE: back to menu', (280, 100), c.text_font, colors.white)
 
